@@ -208,7 +208,19 @@
             font-size: 0.6rem;
             color: #4b5563;
             top: 1.75rem;
+            font-weight: bold;
+        }
+        
+        /* Modified label positioning for better readability */
+        .marker-label.left {
+            transform: translateX(50%);
+            right: 50%;
+            left: auto;
+        }
+        
+        .marker-label.right {
             transform: translateX(-50%);
+            left: 50%;
         }
         
         /* Visual reference line */
@@ -263,51 +275,12 @@
             right: 0;
         }
         
-        .angle-guide {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .angle-marker {
-            position: absolute;
-            width: 1px;
-            height: 0.5rem;
-            background-color: #9ca3af;
-            top: 50%;
-            transform: translateY(-100%);
-        }
-        
-        .angle-marker.bottom {
-            top: 50%;
-            transform: translateY(0);
-        }
-        
-        .angle-marker.degree-5 {
-            background-color: #6b7280;
-            height: 0.75rem;
-        }
-        
-        .angle-marker.degree-0 {
-            background-color: #000000;
-            height: 1rem;
-        }
-        
-        .angle-label {
-            position: absolute;
-            font-size: 0.6rem;
-            color: #4b5563;
-            top: 38%;
-            transform: translateX(-50%);
-        }
-        
-        .angle-label.bottom {
-            top: 58%;
-        }
-        
         footer {
             width: 100%;
             padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
         .instructions {
@@ -343,12 +316,6 @@
             cursor: pointer;
         }
         
-        .error-message {
-            color: #dc2626;
-            margin-bottom: 1rem;
-            font-weight: bold;
-        }
-        
         #install-container {
             position: fixed;
             bottom: 1rem;
@@ -375,6 +342,22 @@
             border-radius: 0.25rem;
             font-weight: bold;
             cursor: pointer;
+        }
+        
+        /* Reset button style */
+        .reset-button {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .reset-button:hover {
+            background-color: #4b5563;
         }
     </style>
 </head>
@@ -406,8 +389,8 @@
             <!-- Primary level bar - horizontal across long edge -->
             <div class="level-indicator">
                 <!-- Markers for reference -->
-                <div class="markers">
-                    <!-- Generate markers dynamically with JavaScript -->
+                <div class="markers" id="markers">
+                    <!-- Will be populated by JavaScript -->
                 </div>
                 
                 <!-- Bubble -->
@@ -424,11 +407,6 @@
                 <!-- Level line (green) -->
                 <div class="level-line"></div>
                 
-                <!-- Angle guides -->
-                <div class="angle-guide">
-                    <!-- Generate angle markers dynamically with JavaScript -->
-                </div>
-                
                 <!-- Tilt line (red) -->
                 <div id="tilt-line" class="tilt-line"></div>
             </div>
@@ -439,6 +417,11 @@
                 Place your phone edge on the surface to check if it's level.<br>
                 For best results, ensure your device is flat and the case doesn't have an uneven edge.
             </p>
+            
+            <!-- Reset button -->
+            <button id="reset-button" class="reset-button">
+                Reset Sensors
+            </button>
         </footer>
     </div>
     
@@ -469,8 +452,8 @@
         const tiltLine = document.getElementById('tilt-line');
         const installContainer = document.getElementById('install-container');
         const installButton = document.getElementById('install-button');
-        const markers = document.querySelector('.markers');
-        const angleGuide = document.querySelector('.angle-guide');
+        const markersContainer = document.getElementById('markers');
+        const resetButton = document.getElementById('reset-button');
 
         // Initialize the app
         function init() {
@@ -479,9 +462,6 @@
             
             // Generate markers for the level indicator
             generateMarkers();
-            
-            // Generate angle markers for the tilt visualization
-            generateAngleMarkers();
             
             // Check if DeviceOrientation is available
             if (window.DeviceOrientationEvent) {
@@ -505,6 +485,9 @@
             
             // Set up install button
             installButton.addEventListener('click', installApp);
+            
+            // Set up reset button
+            resetButton.addEventListener('click', resetSensors);
             
             // Register service worker
             if ('serviceWorker' in navigator) {
@@ -559,7 +542,7 @@
         // Generate markers for the level indicator
         function generateMarkers() {
             // Clear existing markers
-            markers.innerHTML = '';
+            markersContainer.innerHTML = '';
             
             // Create markers at 1-degree intervals
             for (let i = -10; i <= 10; i++) {
@@ -567,60 +550,29 @@
                 const marker = document.createElement('div');
                 marker.className = `marker ${i === 0 ? 'degree-0' : (i % 5 === 0 ? 'degree-5' : '')}`;
                 marker.style.left = `${50 + i * 5}%`;
-                markers.appendChild(marker);
+                markersContainer.appendChild(marker);
                 
                 // Create marker at bottom
                 const markerBottom = document.createElement('div');
                 markerBottom.className = `marker bottom ${i === 0 ? 'degree-0' : (i % 5 === 0 ? 'degree-5' : '')}`;
                 markerBottom.style.left = `${50 + i * 5}%`;
-                markers.appendChild(markerBottom);
+                markersContainer.appendChild(markerBottom);
                 
-                // Add label for 5-degree intervals
+                // Add label for 5-degree and 10-degree intervals with improved positioning
                 if (i % 5 === 0 && i !== 0) {
                     const label = document.createElement('div');
-                    label.className = 'marker-label';
-                    label.textContent = `${Math.abs(i)}°`;
-                    label.style.left = `${50 + i * 5}%`;
-                    markers.appendChild(label);
-                }
-            }
-        }
-        
-        // Generate angle markers for the tilt visualization
-        function generateAngleMarkers() {
-            // Clear existing markers
-            angleGuide.innerHTML = '';
-            
-            // Create markers at 1-degree intervals
-            for (let i = -15; i <= 15; i++) {
-                // Skip 0 as it's the center line
-                if (i === 0) continue;
-                
-                // Create marker at top
-                const marker = document.createElement('div');
-                marker.className = `angle-marker ${i % 5 === 0 ? 'degree-5' : ''}`;
-                marker.style.left = `${50 + i * 3}%`;
-                angleGuide.appendChild(marker);
-                
-                // Create marker at bottom
-                const markerBottom = document.createElement('div');
-                markerBottom.className = `angle-marker bottom ${i % 5 === 0 ? 'degree-5' : ''}`;
-                markerBottom.style.left = `${50 + i * 3}%`;
-                angleGuide.appendChild(markerBottom);
-                
-                // Add label for 5-degree intervals
-                if (i % 5 === 0) {
-                    const label = document.createElement('div');
-                    label.className = 'angle-label';
-                    label.textContent = `${Math.abs(i)}°`;
-                    label.style.left = `${50 + i * 3}%`;
-                    angleGuide.appendChild(label);
                     
-                    const labelBottom = document.createElement('div');
-                    labelBottom.className = 'angle-label bottom';
-                    labelBottom.textContent = `${Math.abs(i)}°`;
-                    labelBottom.style.left = `${50 + i * 3}%`;
-                    angleGuide.appendChild(labelBottom);
+                    // Position labels for better readability - to right of center on left side, to left of center on right side
+                    if (i < 0) {
+                        label.className = 'marker-label right';
+                        label.style.left = `${50 + i * 5}%`;
+                    } else {
+                        label.className = 'marker-label left';
+                        label.style.right = `${50 - i * 5}%`;
+                    }
+                    
+                    label.textContent = `${Math.abs(i)}°`;
+                    markersContainer.appendChild(label);
                 }
             }
         }
@@ -737,6 +689,38 @@
             // Limit the display to +/- 15 degrees for better visualization
             const clampedTilt = Math.max(Math.min(tilt, 15), -15);
             tiltLine.style.transform = `translateY(-50%) rotate(${clampedTilt}deg)`;
+        }
+        
+        // Reset sensors function
+        function resetSensors() {
+            // Reset the sensor values
+            beta = 0;
+            gamma = 0;
+            
+            // Vibrate if available
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+            
+            // Show a brief confirmation message by changing the button text temporarily
+            const originalText = resetButton.textContent;
+            resetButton.textContent = "Sensors Reset";
+            resetButton.disabled = true;
+            
+            setTimeout(() => {
+                resetButton.textContent = originalText;
+                resetButton.disabled = false;
+                
+                // Re-initialize sensors by removing and readding event listener
+                window.removeEventListener('deviceorientation', handleOrientation);
+                setTimeout(() => {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    updateLevel();
+                }, 100);
+            }, 1000);
+            
+            // Update the display
+            updateLevel();
         }
         
         // Install the app
