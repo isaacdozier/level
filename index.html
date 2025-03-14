@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Carpenter's Level Tool</title>
+    
+    <!-- PWA meta tags -->
+    <meta name="description" content="A digital level tool for carpenters and DIY enthusiasts">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Level Tool">
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- iOS icons -->
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f3f4f6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .message-container {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .level-status {
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+        
+        .level-true {
+            color: #16a34a;
+        }
+        
+        .level-false {
+            color: #dc2626;
+        }
+        
+        .tilt-value {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .level-indicator {
+            position: relative;
+            width: 100%;
+            max-width: 28rem;
+            height: 3rem;
+            border: 2px solid #d1d5db;
+            background-color: white;
+            border-radius: 0.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .bubble {
+            position: absolute;
+            top: 0.25rem;
+            height: 2.5rem;
+            width: 2.5rem;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            transition: left 0.1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bubble.level {
+            background-color: #22c55e;
+        }
+        
+        .bubble-center {
+            height: 0.5rem;
+            width: 0.5rem;
+            background-color: white;
+            border-radius: 50%;
+        }
+        
+        .center-mark {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            height: 100%;
+            width: 2px;
+            background-color: #ef4444;
+        }
+        
+        .horizontal-line {
+            width: 100%;
+            border-top: 2px solid #2563eb;
+            position: relative;
+        }
+        
+        .line-end-left, .line-end-right {
+            position: absolute;
+            width: 0.5rem;
+            height: 1rem;
+            background-color: #2563eb;
+        }
+        
+        .line-end-left {
+            left: 0;
+            top: -1rem;
+        }
+        
+        .line-end-right {
+            right: 0;
+            top: -1rem;
+        }
+        
+        .instructions {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.875rem;
+            padding: 1rem;
+            max-width: 28rem;
+        }
+        
+        .instructions ul {
+            list-style-type: disc;
+            text-align: left;
+            padding-left: 2rem;
+            margin-top: 0.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .permission-button {
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .permission-button:hover {
+            background-color: #2563eb;
+        }
+        
+        #install-container {
+            position: fixed;
+            bottom: 1rem;
+            left: 0;
+            right: 0;
+            padding: 0.75rem;
+            background-color: white;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease-out;
+            transform: translateY(100%);
+            z-index: 100;
+        }
+        
+        #install-container.show {
+            transform: translateY(0);
+        }
+        
+        #install-button {
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Carpenter's Digital Level Tool</h1>
+    
+    <div id="permission-screen" class="message-container" style="display: none;">
+        <p>This app needs permission to access your device's orientation sensors.</p>
+        <button id="request-permission" class="permission-button" style="margin-top: 1rem;">
+            Enable Level Tool
+        </button>
+    </div>
+    
+    <div id="error-screen" class="message-container" style="display: none;">
+        <p style="color: #dc2626; margin-bottom: 1rem;" id="error-message"></p>
+        <p id="error-details"></p>
+    </div>
+    
+    <div id="level-screen" style="display: none; width: 100%; text-align: center;">
+        <div class="message-container">
+            <p>Place your phone on the surface to check if it's level.</p>
+            <p class="level-status" id="level-status"></p>
+            <p class="tilt-value" id="tilt-value"></p>
+        </div>
+        
+        <!-- Level indicator -->
+        <div class="level-indicator">
+            <!-- Bubble -->
+            <div id="bubble" class="bubble">
+                <div class="bubble-center"></div>
+            </div>
+            
+            <!-- Center mark -->
+            <div class="center-mark"></div>
+        </div>
+        
+        <!-- Horizontal reference line -->
+        <div class="horizontal-line">
+            <div class="line-end-left"></div>
+            <div class="line-end-right"></div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="instructions">
+            <p>For best results:</p>
+            <ul>
+                <li>Place your phone flat against the surface</li>
+                <li>Use in <span id="orientation-mode">portrait</span> mode</li>
+                <li>Ensure your phone case doesn't have an uneven back</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Install prompt -->
+    <div id="install-container">
+        <p>Install this app on your device!</p>
+        <button id="install-button">Add to Home Screen</button>
+    </div>
+
+    <script>
+        // App state
+        let beta = 0;          // tilt front-to-back (in degrees)
+        let gamma = 0;         // tilt left-to-right (in degrees)
+        let orientation = 'portrait';
+        let permissionState = 'checking';
+        let deferredPrompt = null;
+
+        // DOM elements
+        const permissionScreen = document.getElementById('permission-screen');
+        const errorScreen = document.getElementById('error-screen');
+        const levelScreen = document.getElementById('level-screen');
+        const requestPermissionButton = document.getElementById('request-permission');
+        const errorMessage = document.getElementById('error-message');
+        const errorDetails = document.getElementById('error-details');
+        const levelStatus = document.getElementById('level-status');
+        const tiltValue = document.getElementById('tilt-value');
+        const bubble = document.getElementById('bubble');
+        const orientationMode = document.getElementById('orientation-mode');
+        const installContainer = document.getElementById('install-container');
+        const installButton = document.getElementById('install-button');
+
+        // Initialize the app
+        function init() {
+            // Check if DeviceOrientation is available
+            if (window.DeviceOrientationEvent) {
+                // Request permission for iOS 13+ devices
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    permissionState = 'needs-permission';
+                    showPermissionScreen();
+                } else {
+                    // Non-iOS devices or older iOS versions
+                    permissionState = 'granted';
+                    startLevelTool();
+                }
+            } else {
+                permissionState = 'not-supported';
+                showError('Your device doesn\'t support orientation detection.', 
+                          'This tool requires a device with accelerometer and gyroscope sensors.');
+            }
+
+            // Check orientation
+            checkOrientation();
+            window.addEventListener('resize', checkOrientation);
+            
+            // Set up permission button
+            requestPermissionButton.addEventListener('click', requestOrientationPermission);
+            
+            // Set up install button
+            installButton.addEventListener('click', installApp);
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        })
+                        .catch(error => {
+                            console.log('ServiceWorker registration failed: ', error);
+                        });
+                });
+            }
+            
+            // Handle install prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevent Chrome 67 and earlier from automatically showing the prompt
+                e.preventDefault();
+                // Stash the event so it can be triggered later
+                deferredPrompt = e;
+                // Show the install button
+                installContainer.classList.add('show');
+            });
+            
+            // Hide install prompt if app is already installed
+            window.addEventListener('appinstalled', () => {
+                installContainer.classList.remove('show');
+                deferredPrompt = null;
+            });
+            
+            // Hide install prompt if app is loaded as standalone
+            if (window.matchMedia('(display-mode: standalone)').matches || 
+                window.navigator.standalone === true) {
+                installContainer.classList.remove('show');
+            }
+        }
+
+        // Show permission request screen
+        function showPermissionScreen() {
+            permissionScreen.style.display = 'block';
+            errorScreen.style.display = 'none';
+            levelScreen.style.display = 'none';
+        }
+
+        // Show error screen
+        function showError(message, details) {
+            permissionScreen.style.display = 'none';
+            errorScreen.style.display = 'block';
+            levelScreen.style.display = 'none';
+            
+            errorMessage.textContent = message;
+            errorDetails.textContent = details;
+        }
+
+        // Show level tool
+        function showLevelTool() {
+            permissionScreen.style.display = 'none';
+            errorScreen.style.display = 'none';
+            levelScreen.style.display = 'block';
+        }
+
+        // Request orientation permission for iOS
+        async function requestOrientationPermission() {
+            try {
+                const result = await DeviceOrientationEvent.requestPermission();
+                if (result === 'granted') {
+                    permissionState = 'granted';
+                    startLevelTool();
+                } else {
+                    permissionState = 'denied';
+                    showError('Permission to access orientation sensors was denied.',
+                              'Please allow access to device orientation in your browser settings and reload the page.');
+                }
+            } catch (error) {
+                permissionState = 'error';
+                showError('An error occurred while requesting sensor permissions.',
+                          'Please make sure you\'re using a secure connection (HTTPS) and try again.');
+            }
+        }
+
+        // Start the level tool
+        function startLevelTool() {
+            window.addEventListener('deviceorientation', handleOrientation);
+            showLevelTool();
+            updateLevel();
+        }
+
+        // Handle orientation data
+        function handleOrientation(event) {
+            beta = event.beta;   // Front-to-back tilt
+            gamma = event.gamma;  // Left-to-right tilt
+            updateLevel();
+        }
+
+        // Check device orientation
+        function checkOrientation() {
+            orientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+            orientationMode.textContent = orientation;
+            updateLevel();
+        }
+
+        // Get current tilt based on device orientation
+        function getTilt() {
+            if (orientation === 'landscape') {
+                return gamma;
+            } else {
+                return beta;
+            }
+        }
+
+        // Update level display
+        function updateLevel() {
+            const tilt = getTilt();
+            const isLevel = Math.abs(tilt) < 0.5; // Consider level if within 0.5 degrees
+            
+            // Update status
+            levelStatus.textContent = isLevel ? 'LEVEL ✓' : 'NOT LEVEL';
+            levelStatus.className = isLevel ? 'level-status level-true' : 'level-status level-false';
+            
+            // Update tilt value
+            tiltValue.textContent = `Tilt: ${tilt.toFixed(1)}°`;
+            
+            // Update bubble position (constrained to not go off screen)
+            const bubblePosition = Math.min(Math.max(50 + tilt * 10, 5), 95);
+            bubble.style.left = `calc(${bubblePosition}% - 1.25rem)`;
+            
+            // Update bubble color
+            if (isLevel) {
+                bubble.classList.add('level');
+            } else {
+                bubble.classList.remove('level');
+            }
+        }
+        
+        // Install the app
+        async function installApp() {
+            if (!deferredPrompt) {
+                // The prompt isn't available
+                // Provide instructions for manual installation
+                alert(
+                    'To install this app manually:\n\n' +
+                    '- On iOS: tap the Share button, then "Add to Home Screen"\n' +
+                    '- On Android: tap the menu button, then "Install app"'
+                );
+                return;
+            }
+            
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            // We've used the prompt, and can't use it again
+            deferredPrompt = null;
+            
+            // Hide the install container
+            installContainer.classList.remove('show');
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
