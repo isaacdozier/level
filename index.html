@@ -11,6 +11,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Level Tool">
+    <meta name="screen-orientation" content="landscape">
+    
+    <!-- Force landscape on mobile devices -->
+    <style>
+        @media screen and (max-width: 768px) {
+            body {
+                /* Override any portrait orientation with CSS */
+                transform: rotate(90deg);
+                transform-origin: left top;
+                width: 100vh;
+                height: 100vw;
+                overflow-x: hidden;
+                position: absolute;
+                top: 100%;
+                left: 0;
+            }
+        }
+    </style>
     
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
@@ -201,6 +219,118 @@
             font-weight: bold;
             cursor: pointer;
         }
+        
+        /* New styles for tilt visualization */
+        .tilt-visualization {
+            position: relative;
+            width: 100%;
+            max-width: 28rem;
+            height: 10rem;
+            margin: 1.5rem 0;
+            border: 2px solid #d1d5db;
+            background-color: white;
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+        
+        .level-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #22c55e;
+            transform: translateY(-50%);
+        }
+        
+        .tilt-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #ef4444;
+            transform-origin: center;
+            transform: translateY(-50%) rotate(0deg);
+            transition: transform 0.1s ease-out;
+        }
+        
+        .tilt-line::before, .tilt-line::after {
+            content: '';
+            position: absolute;
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: #ef4444;
+            border-radius: 50%;
+        }
+        
+        .tilt-line::before {
+            left: 0;
+        }
+        
+        .tilt-line::after {
+            right: 0;
+        }
+        
+        .angle-marker {
+            position: absolute;
+            width: 2px;
+            height: 1rem;
+            background-color: #6b7280;
+        }
+        
+        .angle-marker.pos-5 {
+            transform: rotate(5deg);
+            top: calc(50% - 3rem);
+            left: calc(50% + 8rem);
+        }
+        
+        .angle-marker.neg-5 {
+            transform: rotate(-5deg);
+            top: calc(50% - 3rem);
+            left: calc(50% - 8rem);
+        }
+        
+        .angle-marker.pos-10 {
+            transform: rotate(10deg);
+            top: calc(50% - 2.5rem);
+            left: calc(50% + 7rem);
+        }
+        
+        .angle-marker.neg-10 {
+            transform: rotate(-10deg);
+            top: calc(50% - 2.5rem);
+            left: calc(50% - 7rem);
+        }
+        
+        /* Landscape orientation optimizations */
+        @media (orientation: landscape) {
+            .container {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                max-width: 80rem;
+            }
+            
+            .left-panel {
+                width: 45%;
+            }
+            
+            .right-panel {
+                width: 50%;
+            }
+            
+            .tilt-visualization {
+                max-width: 35rem;
+                height: 12rem;
+            }
+            
+            .level-indicator {
+                max-width: 35rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -219,37 +349,58 @@
     </div>
     
     <div id="level-screen" style="display: none; width: 100%; text-align: center;">
-        <div class="message-container">
-            <p>Place your phone on the surface to check if it's level.</p>
-            <p class="level-status" id="level-status"></p>
-            <p class="tilt-value" id="tilt-value"></p>
-        </div>
-        
-        <!-- Level indicator -->
-        <div class="level-indicator">
-            <!-- Bubble -->
-            <div id="bubble" class="bubble">
-                <div class="bubble-center"></div>
+        <div class="container">
+            <div class="left-panel">
+                <div class="message-container">
+                    <p>Place your phone on the surface to check if it's level.</p>
+                    <p class="level-status" id="level-status"></p>
+                    <p class="tilt-value" id="tilt-value"></p>
+                </div>
+                
+                <!-- Level indicator -->
+                <div class="level-indicator">
+                    <!-- Bubble -->
+                    <div id="bubble" class="bubble">
+                        <div class="bubble-center"></div>
+                    </div>
+                    
+                    <!-- Center mark -->
+                    <div class="center-mark"></div>
+                </div>
+                
+                <!-- Horizontal reference line -->
+                <div class="horizontal-line">
+                    <div class="line-end-left"></div>
+                    <div class="line-end-right"></div>
+                </div>
             </div>
             
-            <!-- Center mark -->
-            <div class="center-mark"></div>
-        </div>
-        
-        <!-- Horizontal reference line -->
-        <div class="horizontal-line">
-            <div class="line-end-left"></div>
-            <div class="line-end-right"></div>
-        </div>
-        
-        <!-- Instructions -->
-        <div class="instructions">
-            <p>For best results:</p>
-            <ul>
-                <li>Place your phone flat against the surface</li>
-                <li>Use in <span id="orientation-mode">portrait</span> mode</li>
-                <li>Ensure your phone case doesn't have an uneven back</li>
-            </ul>
+            <div class="right-panel">
+                <!-- New tilt visualization -->
+                <div class="tilt-visualization">
+                    <!-- Level line (green) -->
+                    <div class="level-line"></div>
+                    
+                    <!-- Tilt line (red) -->
+                    <div id="tilt-line" class="tilt-line"></div>
+                    
+                    <!-- Angle markers -->
+                    <div class="angle-marker pos-5"></div>
+                    <div class="angle-marker neg-5"></div>
+                    <div class="angle-marker pos-10"></div>
+                    <div class="angle-marker neg-10"></div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="instructions">
+                    <p>For best results:</p>
+                    <ul>
+                        <li>Place your phone flat against the surface</li>
+                        <li>Use in <span id="orientation-mode">landscape</span> mode</li>
+                        <li>Ensure your phone case doesn't have an uneven back</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -263,7 +414,7 @@
         // App state
         let beta = 0;          // tilt front-to-back (in degrees)
         let gamma = 0;         // tilt left-to-right (in degrees)
-        let orientation = 'portrait';
+        let orientation = 'landscape';
         let permissionState = 'checking';
         let deferredPrompt = null;
 
@@ -277,12 +428,20 @@
         const levelStatus = document.getElementById('level-status');
         const tiltValue = document.getElementById('tilt-value');
         const bubble = document.getElementById('bubble');
+        const tiltLine = document.getElementById('tilt-line');
         const orientationMode = document.getElementById('orientation-mode');
         const installContainer = document.getElementById('install-container');
         const installButton = document.getElementById('install-button');
 
         // Initialize the app
         function init() {
+            // Force landscape orientation if possible
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(e => {
+                    console.log('Unable to lock orientation: ', e);
+                });
+            }
+            
             // Check if DeviceOrientation is available
             if (window.DeviceOrientationEvent) {
                 // Request permission for iOS 13+ devices
@@ -303,6 +462,7 @@
             // Check orientation
             checkOrientation();
             window.addEventListener('resize', checkOrientation);
+            window.addEventListener('orientationchange', checkOrientation);
             
             // Set up permission button
             requestPermissionButton.addEventListener('click', requestOrientationPermission);
@@ -405,18 +565,16 @@
 
         // Check device orientation
         function checkOrientation() {
-            orientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+            // Always set to landscape for this version
+            orientation = 'landscape';
             orientationMode.textContent = orientation;
             updateLevel();
         }
 
         // Get current tilt based on device orientation
         function getTilt() {
-            if (orientation === 'landscape') {
-                return gamma;
-            } else {
-                return beta;
-            }
+            // In landscape, use gamma (left-to-right tilt)
+            return gamma;
         }
 
         // Update level display
@@ -441,6 +599,11 @@
             } else {
                 bubble.classList.remove('level');
             }
+            
+            // Update tilt line rotation
+            // Limit the display to +/- 15 degrees for better visualization
+            const clampedTilt = Math.max(Math.min(tilt, 15), -15);
+            tiltLine.style.transform = `translateY(-50%) rotate(${clampedTilt}deg)`;
         }
         
         // Install the app
