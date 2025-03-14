@@ -1,11 +1,12 @@
-// Cache name - update this when files change to create a new cache version
-const CACHE_NAME = 'level-tool-v1';
+// Improved Service Worker for full offline functionality
+const CACHE_NAME = 'level-tool-cache-v1';
 
-// Files to cache
-const urlsToCache = [
+// Files to cache - include ALL files needed for the app to work
+const filesToCache = [
   './',
   './index.html',
   './manifest.json',
+  './service-worker.js',
   './icons/icon-16x16.png',
   './icons/icon-32x32.png',
   './icons/icon-72x72.png',
@@ -20,86 +21,92 @@ const urlsToCache = [
   './icons/icon-512x512.png'
 ];
 
-// Install event - cache all initial resources
+// Install event - cache all necessary resources
 self.addEventListener('install', event => {
+  console.log('[Service Worker] Install');
+  
+  // Perform install steps: precache all essential resources
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('[Service Worker] Caching all files');
+        return cache.addAll(filesToCache);
       })
-      .then(() => self.skipWaiting())
+      .then(() => {
+        // Force the waiting service worker to become the active service worker
+        return self.skipWaiting();
+      })
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  console.log('[Service Worker] Activate');
   
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          // Delete any old caches that aren't the current one
+          if (cacheName !== CACHE_NAME) {
+            console.log('[Service Worker] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      // Take control of all clients immediately
+      return self.clients.claim();
+    })
   );
 });
 
-// Fetch event - serve cached resources when offline
+// Fetch event with network-first, falling back to cache strategy
 self.addEventListener('fetch', event => {
+  console.log('[Service Worker] Fetch', event.request.url);
+  
   event.respondWith(
-    caches.match(event.request)
+    // Try network first
+    fetch(event.request)
       .then(response => {
-        // Cache hit - return the response
-        if (response) {
-          return response;
-        }
+        // Clone the response since we need to use it twice
+        const responseClone = response.clone();
         
-        // Clone the request because it's a one-time use stream
-        const fetchRequest = event.request.clone();
+        // Update the cache with the fresh version
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseClone);
+          });
         
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
+        return response;
+      })
+      .catch(() => {
+        // Network failed, try the cache
+        return caches.match(event.request)
+          .then(cachedResponse => {
+            if (cachedResponse) {
+              // Return cached version if we have it
+              return cachedResponse;
             }
             
-            // Clone the response because it's a one-time use stream
-            const responseToCache = response.clone();
+            // If the request is for a page, return the offline page
+            if (event.request.mode === 'navigate') {
+              return caches.match('./index.html');
+            }
             
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-            
-            return response;
-          }
-        ).catch(() => {
-          // If the network request fails and there's no cache match,
-          // return a fallback or just fail gracefully
-          return new Response('You are offline and this resource is not cached.');
-        });
+            // Otherwise return a basic failure response
+            return new Response('Network error happened', {
+              status: 408,
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          });
       })
   );
 });
 
-// Push notification event (if you want to add this feature)
-self.addEventListener('push', event => {
-  if (event.data) {
-    const notification = event.data.json();
-    
-    self.registration.showNotification(
-      notification.title || 'Level Tool Update',
-      {
-        body: notification.body || 'Check your level measurements',
-        icon: './icons/icon-192x192.png',
-        badge: './icons/icon-72x72.png'
-      }
-    );
+// Handle service worker updates
+self.addEventListener('message', event => {
+  if (event.data.action === 'skipWaiting') {
+    self.skipWaiting();
   }
 });
