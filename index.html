@@ -335,20 +335,41 @@
             cursor: pointer;
         }
         
-        /* Reset button style */
-        .reset-button {
+        /* Button container and button styles */
+        .button-container {
+            display: flex;
+            gap: 0.5rem;
             margin-top: 0.5rem;
+        }
+        
+        .button {
             padding: 0.5rem 1rem;
-            background-color: #6b7280;
-            color: white;
             border: none;
             border-radius: 0.25rem;
             font-weight: bold;
             cursor: pointer;
         }
         
+        .reset-button {
+            background-color: #6b7280;
+            color: white;
+        }
+        
         .reset-button:hover {
             background-color: #4b5563;
+        }
+        
+        .fullscreen-button {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .fullscreen-button:hover {
+            background-color: #2563eb;
+        }
+        
+        .fullscreen-button.active {
+            background-color: #16a34a;
         }
     </style>
 </head>
@@ -409,10 +430,18 @@
                 For best results, ensure your device is flat and the case doesn't have an uneven edge.
             </p>
             
-            <!-- Reset button -->
-            <button id="reset-button" class="reset-button">
-                Reset Sensors
-            </button>
+            <!-- Button container with both buttons -->
+            <div class="button-container">
+                <!-- Fullscreen button -->
+                <button id="fullscreen-button" class="button fullscreen-button">
+                    <span id="fullscreen-text">Fullscreen</span>
+                </button>
+                
+                <!-- Reset button -->
+                <button id="reset-button" class="button reset-button">
+                    Reset Sensors
+                </button>
+            </div>
         </footer>
     </div>
     
@@ -428,6 +457,7 @@
         let gamma = 0;         // tilt left-to-right (in degrees)
         let permissionState = 'checking';
         let deferredPrompt = null;
+        let isInFullscreen = false;
 
         // DOM elements
         const permissionScreen = document.getElementById('permission-screen');
@@ -444,6 +474,8 @@
         const installButton = document.getElementById('install-button');
         const markersContainer = document.getElementById('markers');
         const resetButton = document.getElementById('reset-button');
+        const fullscreenButton = document.getElementById('fullscreen-button');
+        const fullscreenText = document.getElementById('fullscreen-text');
 
         // Initialize the app
         function init() {
@@ -478,6 +510,9 @@
             
             // Set up reset button
             resetButton.addEventListener('click', resetSensors);
+            
+            // Set up fullscreen button
+            fullscreenButton.addEventListener('click', toggleFullscreen);
             
             // Register service worker
             if ('serviceWorker' in navigator) {
@@ -527,6 +562,76 @@
                 setTimeout(attemptHideBrowserUI, 500);
                 setTimeout(updateLevel, 100);
             });
+            
+            // Check for fullscreen changes
+            document.addEventListener('fullscreenchange', updateFullscreenButtonState);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenButtonState);
+            document.addEventListener('mozfullscreenchange', updateFullscreenButtonState);
+            document.addEventListener('MSFullscreenChange', updateFullscreenButtonState);
+            
+            // Initial update to fullscreen button state
+            updateFullscreenButtonState();
+        }
+        
+        // Toggle fullscreen mode
+        function toggleFullscreen() {
+            if (!isInFullscreen) {
+                enterFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        }
+        
+        // Enter fullscreen mode
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.mozRequestFullScreen) { // Firefox
+                elem.mozRequestFullScreen();
+            } else if (elem.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { // IE/Edge
+                elem.msRequestFullscreen();
+            } else {
+                // Fallback to scroll technique
+                window.scrollTo(0, 1);
+            }
+        }
+        
+        // Exit fullscreen mode
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) { // Firefox
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { // IE/Edge
+                document.msExitFullscreen();
+            }
+        }
+        
+        // Update fullscreen button state
+        function updateFullscreenButtonState() {
+            // Check if we're in fullscreen mode
+            isInFullscreen = (document.fullscreenElement || 
+                           document.webkitFullscreenElement || 
+                           document.mozFullScreenElement || 
+                           document.msFullscreenElement);
+            
+            // Also check if we're in standalone PWA mode
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone === true;
+            
+            if (isInFullscreen || isStandalone) {
+                fullscreenButton.classList.add('active');
+                fullscreenText.textContent = "Exit Fullscreen";
+            } else {
+                fullscreenButton.classList.remove('active');
+                fullscreenText.textContent = "Fullscreen";
+            }
         }
         
         // Attempt to hide browser UI
@@ -535,24 +640,9 @@
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                                 window.navigator.standalone === true;
             
-            if (!isStandalone) {
+            if (!isStandalone && !isInFullscreen) {
                 // Method 1: Scroll technique (works on some mobile browsers)
                 window.scrollTo(0, 1);
-                
-                // Method 2: Try to use the Fullscreen API if available
-                if (document.documentElement.requestFullscreen) {
-                    try {
-                        // We use a user interaction to try to trigger fullscreen
-                        document.body.addEventListener('click', function fullscreenHandler() {
-                            document.documentElement.requestFullscreen().catch(e => {
-                                console.log("Couldn't enter fullscreen mode:", e);
-                            });
-                            document.body.removeEventListener('click', fullscreenHandler);
-                        }, { once: true });
-                    } catch (e) {
-                        console.log("Fullscreen API error:", e);
-                    }
-                }
             }
         }
         
@@ -635,9 +725,6 @@
             permissionScreen.style.display = 'none';
             errorScreen.style.display = 'none';
             levelScreen.style.display = 'flex';
-            
-            // Try to hide browser UI again after screen is shown
-            setTimeout(attemptHideBrowserUI, 500);
         }
 
         // Request orientation permission for iOS
@@ -762,9 +849,6 @@
             
             // Update the display
             updateLevel();
-            
-            // Also try to hide browser UI again when reset is clicked
-            attemptHideBrowserUI();
         }
         
         // Install the app
@@ -795,16 +879,6 @@
 
         // Initialize the app
         init();
-        
-        // Add a click handler to the entire document to help trigger fullscreen
-        document.addEventListener('click', function() {
-            // Try to hide browser UI when user taps anywhere
-            attemptHideBrowserUI();
-        }, { once: false });
-        
-        // Make additional attempts to hide browser UI
-        setTimeout(attemptHideBrowserUI, 3000);
-        setTimeout(attemptHideBrowserUI, 5000);
     </script>
 </body>
 </html>
