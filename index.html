@@ -9,20 +9,14 @@
     <meta name="description" content="A digital level tool for carpenters and DIY enthusiasts">
     <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Level Tool">
-    <meta name="orientation" content="landscape">
     
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
     
     <!-- iOS icons -->
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
-    
-    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
     
@@ -40,6 +34,7 @@
             width: 100%;
             overflow: hidden;
             background-color: #f3f4f6;
+            position: fixed; /* Prevent scrolling */
         }
         
         body {
@@ -374,7 +369,7 @@
     
     <div id="level-screen" class="app-container" style="display: none;">
         <header>
-            <h1>Carpenter's Level Tool</h1>
+            <h1>Carpenter's Digital Level Tool</h1>
             <div class="status-bar">
                 <span class="level-status" id="level-status">NOT LEVEL</span>
                 <span class="tilt-value" id="tilt-value">Tilt: 0.0°</span>
@@ -431,7 +426,6 @@
         // App state
         let beta = 0;          // tilt front-to-back (in degrees)
         let gamma = 0;         // tilt left-to-right (in degrees)
-        let orientation = 'landscape';
         let permissionState = 'checking';
         let deferredPrompt = null;
 
@@ -453,8 +447,8 @@
 
         // Initialize the app
         function init() {
-            // Try to force landscape orientation
-            forceLandscape();
+            // Try to hide browser UI after a short delay
+            setTimeout(attemptHideBrowserUI, 1000);
             
             // Generate markers for the level indicator
             generateMarkers();
@@ -520,18 +514,45 @@
                 installContainer.classList.remove('show');
             }
             
-            // Listen for orientation changes
-            window.addEventListener('orientationchange', forceLandscape);
-            window.addEventListener('resize', forceLandscape);
-        }
-        
-        // Force landscape orientation
-        function forceLandscape() {
-            // Try to lock orientation if supported
+            // Try to force landscape orientation
             if (screen.orientation && screen.orientation.lock) {
                 screen.orientation.lock('landscape').catch(e => {
                     console.log('Unable to lock orientation: ', e);
                 });
+            }
+            
+            // Setup event listeners for orientation changes
+            window.addEventListener('orientationchange', () => {
+                // Try to hide browser UI again after orientation change
+                setTimeout(attemptHideBrowserUI, 500);
+                setTimeout(updateLevel, 100);
+            });
+        }
+        
+        // Attempt to hide browser UI
+        function attemptHideBrowserUI() {
+            // Check if we're in standalone mode (already fullscreen)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone === true;
+            
+            if (!isStandalone) {
+                // Method 1: Scroll technique (works on some mobile browsers)
+                window.scrollTo(0, 1);
+                
+                // Method 2: Try to use the Fullscreen API if available
+                if (document.documentElement.requestFullscreen) {
+                    try {
+                        // We use a user interaction to try to trigger fullscreen
+                        document.body.addEventListener('click', function fullscreenHandler() {
+                            document.documentElement.requestFullscreen().catch(e => {
+                                console.log("Couldn't enter fullscreen mode:", e);
+                            });
+                            document.body.removeEventListener('click', fullscreenHandler);
+                        }, { once: true });
+                    } catch (e) {
+                        console.log("Fullscreen API error:", e);
+                    }
+                }
             }
         }
         
@@ -614,6 +635,9 @@
             permissionScreen.style.display = 'none';
             errorScreen.style.display = 'none';
             levelScreen.style.display = 'flex';
+            
+            // Try to hide browser UI again after screen is shown
+            setTimeout(attemptHideBrowserUI, 500);
         }
 
         // Request orientation permission for iOS
@@ -738,6 +762,9 @@
             
             // Update the display
             updateLevel();
+            
+            // Also try to hide browser UI again when reset is clicked
+            attemptHideBrowserUI();
         }
         
         // Install the app
@@ -768,6 +795,16 @@
 
         // Initialize the app
         init();
+        
+        // Add a click handler to the entire document to help trigger fullscreen
+        document.addEventListener('click', function() {
+            // Try to hide browser UI when user taps anywhere
+            attemptHideBrowserUI();
+        }, { once: false });
+        
+        // Make additional attempts to hide browser UI
+        setTimeout(attemptHideBrowserUI, 3000);
+        setTimeout(attemptHideBrowserUI, 5000);
     </script>
 </body>
 </html>
