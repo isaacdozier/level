@@ -5,21 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Carpenter's Level Tool</title>
     
-    <!-- Basic PWA settings -->
+    <!-- PWA meta tags -->
     <meta name="description" content="A digital level tool for carpenters and DIY enthusiasts">
     <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Level Tool">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="orientation" content="landscape">
     
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- Icons -->
+    <!-- iOS icons -->
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
     
     <style>
         * {
@@ -42,6 +47,19 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+        
+        /* Force landscape */
+        @media screen and (orientation: portrait) {
+            html {
+                transform: rotate(-90deg);
+                transform-origin: left top;
+                width: 100vh;
+                height: 100vw;
+                position: absolute;
+                top: 100%;
+                left: 0;
+            }
         }
         
         .app-container {
@@ -337,61 +355,9 @@
         .reset-button:hover {
             background-color: #4b5563;
         }
-        
-        .rotate-notice {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #f3f4f6;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .rotate-notice img {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 1rem;
-            animation: rotate 2s infinite;
-        }
-        
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(90deg); }
-            75% { transform: rotate(90deg); }
-            100% { transform: rotate(0deg); }
-        }
-        
-        /* Hide content in portrait and show rotate message */
-        @media (orientation: portrait) {
-            .rotate-notice {
-                display: flex;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Rotation notice -->
-    <div class="rotate-notice">
-        <h2>Please rotate your device</h2>
-        <p>This app works best in landscape orientation</p>
-        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="2" width="14" height="20" rx="2" stroke="#000000" stroke-width="2"/>
-            <path d="M9 6H15" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
-            <path d="M2 12L2 12.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
-            <path d="M22 12L22 12.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
-            <path d="M12 22L12 22.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
-            <path d="M12 2L12 2.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
-            <path d="M19 6.5L19 17.5" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-    </div>
-    
     <div id="permission-screen" class="permission-screen">
         <h1>Carpenter's Digital Level Tool</h1>
         <p style="margin-top: 1rem; text-align: center;">This app needs permission to access your device's orientation sensors.</p>
@@ -408,7 +374,7 @@
     
     <div id="level-screen" class="app-container" style="display: none;">
         <header>
-            <h1>Carpenter's Digital Level Tool</h1>
+            <h1>Carpenter's Level Tool</h1>
             <div class="status-bar">
                 <span class="level-status" id="level-status">NOT LEVEL</span>
                 <span class="tilt-value" id="tilt-value">Tilt: 0.0°</span>
@@ -465,6 +431,7 @@
         // App state
         let beta = 0;          // tilt front-to-back (in degrees)
         let gamma = 0;         // tilt left-to-right (in degrees)
+        let orientation = 'landscape';
         let permissionState = 'checking';
         let deferredPrompt = null;
 
@@ -486,6 +453,9 @@
 
         // Initialize the app
         function init() {
+            // Try to force landscape orientation
+            forceLandscape();
+            
             // Generate markers for the level indicator
             generateMarkers();
             
@@ -548,6 +518,20 @@
             if (window.matchMedia('(display-mode: standalone)').matches || 
                 window.navigator.standalone === true) {
                 installContainer.classList.remove('show');
+            }
+            
+            // Listen for orientation changes
+            window.addEventListener('orientationchange', forceLandscape);
+            window.addEventListener('resize', forceLandscape);
+        }
+        
+        // Force landscape orientation
+        function forceLandscape() {
+            // Try to lock orientation if supported
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(e => {
+                    console.log('Unable to lock orientation: ', e);
+                });
             }
         }
         
@@ -668,15 +652,26 @@
         // Get current tilt based on device orientation
         function getTilt() {
             // For landscape mode, we'll use gamma (left-right tilt)
+            // Depending on how the phone is held, we might need to use beta
+            
+            // Use gamma for tilt detection
+            // Note: We need to check the actual device orientation here
+            // and might need to adjust based on the orientation
             let tilt = gamma;
             
             // Adjust based on device orientation
-            if (window.orientation === 90 || window.orientation === -90) {
-                // Device is in landscape - use gamma (most common)
-                tilt = window.orientation === 90 ? gamma : -gamma;
-            } else {
-                // Device is in portrait - use beta
-                tilt = window.orientation === 0 ? beta : -beta;
+            if (window.orientation === 90) {
+                // Device is rotated to the right
+                tilt = gamma;
+            } else if (window.orientation === -90) {
+                // Device is rotated to the left
+                tilt = -gamma;
+            } else if (window.orientation === 180) {
+                // Device is upside down
+                tilt = -beta;
+            } else if (window.orientation === 0) {
+                // Device is in normal portrait
+                tilt = beta;
             }
             
             return tilt;
@@ -773,12 +768,6 @@
 
         // Initialize the app
         init();
-        
-        // Handle orientation changes
-        window.addEventListener('orientationchange', () => {
-            // Wait a moment for the orientation to complete
-            setTimeout(updateLevel, 100);
-        });
     </script>
 </body>
 </html>
