@@ -2,35 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Carpenter's Level Tool</title>
     
-    <!-- Enhanced PWA meta tags for full-screen -->
+    <!-- Basic PWA settings -->
     <meta name="description" content="A digital level tool for carpenters and DIY enthusiasts">
     <meta name="theme-color" content="#3b82f6">
-    
-    <!-- iOS fullscreen specifics -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Level Tool">
-    
-    <!-- Android fullscreen specifics -->
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="orientation" content="landscape">
-    <meta name="display" content="fullscreen">
     
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- iOS icons -->
+    <!-- Icons -->
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
     
     <style>
         * {
@@ -46,7 +35,6 @@
             width: 100%;
             overflow: hidden;
             background-color: #f3f4f6;
-            position: fixed; /* Prevent scrolling */
         }
         
         body {
@@ -54,21 +42,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            /* Handle safe areas for notches */
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-        }
-        
-        /* Force landscape */
-        @media screen and (orientation: portrait) {
-            html {
-                transform: rotate(-90deg);
-                transform-origin: left top;
-                width: 100vh;
-                height: 100vw;
-                position: absolute;
-                top: 100%;
-                left: 0;
-            }
         }
         
         .app-container {
@@ -365,30 +338,58 @@
             background-color: #4b5563;
         }
         
-        /* Display fullscreen message */
-        .fullscreen-message {
+        .rotate-notice {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 0.5rem;
+            height: 100%;
+            background-color: #f3f4f6;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
             text-align: center;
-            font-size: 0.8rem;
-            z-index: 1000;
-            display: none;
+            padding: 2rem;
         }
         
-        .fullscreen-message.show {
-            display: block;
+        .rotate-notice img {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1rem;
+            animation: rotate 2s infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg); }
+            75% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+        
+        /* Hide content in portrait and show rotate message */
+        @media (orientation: portrait) {
+            .rotate-notice {
+                display: flex;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Fullscreen message -->
-    <div id="fullscreen-message" class="fullscreen-message">
-        Add to Home Screen for fullscreen experience
+    <!-- Rotation notice -->
+    <div class="rotate-notice">
+        <h2>Please rotate your device</h2>
+        <p>This app works best in landscape orientation</p>
+        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="2" width="14" height="20" rx="2" stroke="#000000" stroke-width="2"/>
+            <path d="M9 6H15" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+            <path d="M2 12L2 12.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+            <path d="M22 12L22 12.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 22L12 22.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 2L12 2.01" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+            <path d="M19 6.5L19 17.5" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+        </svg>
     </div>
     
     <div id="permission-screen" class="permission-screen">
@@ -464,10 +465,8 @@
         // App state
         let beta = 0;          // tilt front-to-back (in degrees)
         let gamma = 0;         // tilt left-to-right (in degrees)
-        let orientation = 'landscape';
         let permissionState = 'checking';
         let deferredPrompt = null;
-        let isFullscreen = false;
 
         // DOM elements
         const permissionScreen = document.getElementById('permission-screen');
@@ -484,16 +483,9 @@
         const installButton = document.getElementById('install-button');
         const markersContainer = document.getElementById('markers');
         const resetButton = document.getElementById('reset-button');
-        const fullscreenMessage = document.getElementById('fullscreen-message');
 
         // Initialize the app
         function init() {
-            // Check if running in standalone/fullscreen mode
-            checkIfFullscreen();
-            
-            // Try to force landscape orientation
-            forceLandscape();
-            
             // Generate markers for the level indicator
             generateMarkers();
             
@@ -550,70 +542,12 @@
             window.addEventListener('appinstalled', () => {
                 installContainer.classList.remove('show');
                 deferredPrompt = null;
-                // Refresh the page after installation to activate standalone mode
-                window.location.reload();
             });
             
             // Hide install prompt if app is loaded as standalone
-            if (isFullscreen) {
+            if (window.matchMedia('(display-mode: standalone)').matches || 
+                window.navigator.standalone === true) {
                 installContainer.classList.remove('show');
-            }
-            
-            // Listen for orientation changes
-            window.addEventListener('orientationchange', forceLandscape);
-            window.addEventListener('resize', forceLandscape);
-            
-            // Setup fullscreen API if available
-            setupFullscreenFallback();
-        }
-        
-        // Check if the app is running in standalone/fullscreen mode
-        function checkIfFullscreen() {
-            isFullscreen = window.matchMedia('(display-mode: standalone)').matches || 
-                        window.matchMedia('(display-mode: fullscreen)').matches ||
-                        window.navigator.standalone === true;
-            
-            // Show message if not in fullscreen
-            if (!isFullscreen) {
-                setTimeout(() => {
-                    fullscreenMessage.classList.add('show');
-                    setTimeout(() => {
-                        fullscreenMessage.classList.remove('show');
-                    }, 5000);
-                }, 3000);
-            }
-            
-            return isFullscreen;
-        }
-        
-        // Setup fullscreen API fallback for browsers that support it
-        function setupFullscreenFallback() {
-            // Only try this if we're not already in standalone mode
-            if (!isFullscreen) {
-                // Try to use the fullscreen API as a fallback
-                document.addEventListener('click', () => {
-                    const docEl = document.documentElement;
-                    
-                    if (docEl.requestFullscreen) {
-                        docEl.requestFullscreen();
-                    } else if (docEl.mozRequestFullScreen) { // Firefox
-                        docEl.mozRequestFullScreen();
-                    } else if (docEl.webkitRequestFullscreen) { // Chrome, Safari and Opera
-                        docEl.webkitRequestFullscreen();
-                    } else if (docEl.msRequestFullscreen) { // IE/Edge
-                        docEl.msRequestFullscreen();
-                    }
-                }, { once: true });
-            }
-        }
-        
-        // Force landscape orientation
-        function forceLandscape() {
-            // Try to lock orientation if supported
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(e => {
-                    console.log('Unable to lock orientation: ', e);
-                });
             }
         }
         
@@ -734,26 +668,15 @@
         // Get current tilt based on device orientation
         function getTilt() {
             // For landscape mode, we'll use gamma (left-right tilt)
-            // Depending on how the phone is held, we might need to use beta
-            
-            // Use gamma for tilt detection
-            // Note: We need to check the actual device orientation here
-            // and might need to adjust based on the orientation
             let tilt = gamma;
             
             // Adjust based on device orientation
-            if (window.orientation === 90) {
-                // Device is rotated to the right
-                tilt = gamma;
-            } else if (window.orientation === -90) {
-                // Device is rotated to the left
-                tilt = -gamma;
-            } else if (window.orientation === 180) {
-                // Device is upside down
-                tilt = -beta;
-            } else if (window.orientation === 0) {
-                // Device is in normal portrait
-                tilt = beta;
+            if (window.orientation === 90 || window.orientation === -90) {
+                // Device is in landscape - use gamma (most common)
+                tilt = window.orientation === 90 ? gamma : -gamma;
+            } else {
+                // Device is in portrait - use beta
+                tilt = window.orientation === 0 ? beta : -beta;
             }
             
             return tilt;
@@ -850,6 +773,12 @@
 
         // Initialize the app
         init();
+        
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            // Wait a moment for the orientation to complete
+            setTimeout(updateLevel, 100);
+        });
     </script>
 </body>
 </html>
