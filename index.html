@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Carpenter's Level Tool</title>
     
-    <!-- PWA meta tags -->
+    <!-- Enhanced PWA meta tags for full-screen -->
     <meta name="description" content="A digital level tool for carpenters and DIY enthusiasts">
     <meta name="theme-color" content="#3b82f6">
+    
+    <!-- iOS fullscreen specifics -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Level Tool">
+    
+    <!-- Android fullscreen specifics -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="orientation" content="landscape">
+    <meta name="display" content="fullscreen">
     
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
@@ -40,6 +46,7 @@
             width: 100%;
             overflow: hidden;
             background-color: #f3f4f6;
+            position: fixed; /* Prevent scrolling */
         }
         
         body {
@@ -47,6 +54,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            /* Handle safe areas for notches */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
         
         /* Force landscape */
@@ -128,7 +137,7 @@
         .level-indicator {
             position: relative;
             width: 100%;
-            height: 4rem;
+            height: 5rem;
             border: 2px solid #d1d5db;
             background-color: white;
             border-radius: 0.5rem;
@@ -138,7 +147,7 @@
         
         .bubble {
             position: absolute;
-            top: 0.5rem;
+            top: 1.5rem;
             height: 3rem;
             width: 3rem;
             border-radius: 50%;
@@ -185,7 +194,7 @@
             width: 1px;
             height: 1rem;
             background-color: #9ca3af;
-            top: 0;
+            top: 2.5rem;
             transform: translateX(-50%);
         }
         
@@ -196,6 +205,12 @@
         
         .marker.degree-5 {
             height: 1.5rem;
+            background-color: #6b7280;
+        }
+        
+        .marker.degree-10 {
+            height: 1.8rem;
+            background-color: #4b5563;
         }
         
         .marker.degree-0 {
@@ -205,22 +220,12 @@
         
         .marker-label {
             position: absolute;
-            font-size: 0.6rem;
-            color: #4b5563;
-            top: 1.75rem;
+            font-size: 0.75rem;
             font-weight: bold;
-        }
-        
-        /* Modified label positioning for better readability */
-        .marker-label.left {
-            transform: translateX(50%);
-            right: 50%;
-            left: auto;
-        }
-        
-        .marker-label.right {
+            color: #1f2937;
+            top: 0.75rem;
+            text-align: center;
             transform: translateX(-50%);
-            left: 50%;
         }
         
         /* Visual reference line */
@@ -359,9 +364,33 @@
         .reset-button:hover {
             background-color: #4b5563;
         }
+        
+        /* Display fullscreen message */
+        .fullscreen-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .fullscreen-message.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
+    <!-- Fullscreen message -->
+    <div id="fullscreen-message" class="fullscreen-message">
+        Add to Home Screen for fullscreen experience
+    </div>
+    
     <div id="permission-screen" class="permission-screen">
         <h1>Carpenter's Digital Level Tool</h1>
         <p style="margin-top: 1rem; text-align: center;">This app needs permission to access your device's orientation sensors.</p>
@@ -378,7 +407,7 @@
     
     <div id="level-screen" class="app-container" style="display: none;">
         <header>
-            <h1>Carpenter's Level Tool</h1>
+            <h1>Carpenter's Digital Level Tool</h1>
             <div class="status-bar">
                 <span class="level-status" id="level-status">NOT LEVEL</span>
                 <span class="tilt-value" id="tilt-value">Tilt: 0.0°</span>
@@ -438,6 +467,7 @@
         let orientation = 'landscape';
         let permissionState = 'checking';
         let deferredPrompt = null;
+        let isFullscreen = false;
 
         // DOM elements
         const permissionScreen = document.getElementById('permission-screen');
@@ -454,9 +484,13 @@
         const installButton = document.getElementById('install-button');
         const markersContainer = document.getElementById('markers');
         const resetButton = document.getElementById('reset-button');
+        const fullscreenMessage = document.getElementById('fullscreen-message');
 
         // Initialize the app
         function init() {
+            // Check if running in standalone/fullscreen mode
+            checkIfFullscreen();
+            
             // Try to force landscape orientation
             forceLandscape();
             
@@ -516,17 +550,61 @@
             window.addEventListener('appinstalled', () => {
                 installContainer.classList.remove('show');
                 deferredPrompt = null;
+                // Refresh the page after installation to activate standalone mode
+                window.location.reload();
             });
             
             // Hide install prompt if app is loaded as standalone
-            if (window.matchMedia('(display-mode: standalone)').matches || 
-                window.navigator.standalone === true) {
+            if (isFullscreen) {
                 installContainer.classList.remove('show');
             }
             
             // Listen for orientation changes
             window.addEventListener('orientationchange', forceLandscape);
             window.addEventListener('resize', forceLandscape);
+            
+            // Setup fullscreen API if available
+            setupFullscreenFallback();
+        }
+        
+        // Check if the app is running in standalone/fullscreen mode
+        function checkIfFullscreen() {
+            isFullscreen = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.matchMedia('(display-mode: fullscreen)').matches ||
+                        window.navigator.standalone === true;
+            
+            // Show message if not in fullscreen
+            if (!isFullscreen) {
+                setTimeout(() => {
+                    fullscreenMessage.classList.add('show');
+                    setTimeout(() => {
+                        fullscreenMessage.classList.remove('show');
+                    }, 5000);
+                }, 3000);
+            }
+            
+            return isFullscreen;
+        }
+        
+        // Setup fullscreen API fallback for browsers that support it
+        function setupFullscreenFallback() {
+            // Only try this if we're not already in standalone mode
+            if (!isFullscreen) {
+                // Try to use the fullscreen API as a fallback
+                document.addEventListener('click', () => {
+                    const docEl = document.documentElement;
+                    
+                    if (docEl.requestFullscreen) {
+                        docEl.requestFullscreen();
+                    } else if (docEl.mozRequestFullScreen) { // Firefox
+                        docEl.mozRequestFullScreen();
+                    } else if (docEl.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                        docEl.webkitRequestFullscreen();
+                    } else if (docEl.msRequestFullscreen) { // IE/Edge
+                        docEl.msRequestFullscreen();
+                    }
+                }, { once: true });
+            }
         }
         
         // Force landscape orientation
@@ -544,34 +622,53 @@
             // Clear existing markers
             markersContainer.innerHTML = '';
             
-            // Create markers at 1-degree intervals
-            for (let i = -10; i <= 10; i++) {
-                // Create marker at top
+            // Calculate the scaling factor for the 90-degree range
+            // We want the markers to be dense enough in the middle but still show up to 90 degrees
+            const spacing = 0.55; // Degrees per percent of width
+            
+            // Create markers for specific degrees
+            const degreesToShow = [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60, 75, 90];
+            
+            // Add markers for both positive and negative angles
+            for (let i = -90; i <= 90; i++) {
+                // Only show major markers to avoid overcrowding
+                if (!degreesToShow.includes(Math.abs(i))) continue;
+                
+                // Calculate position (50% is center)
+                const position = 50 + i / spacing;
+                
+                // Skip if outside the visible area
+                if (position < 0 || position > 100) continue;
+                
+                // Create marker at the appropriate position
                 const marker = document.createElement('div');
-                marker.className = `marker ${i === 0 ? 'degree-0' : (i % 5 === 0 ? 'degree-5' : '')}`;
-                marker.style.left = `${50 + i * 5}%`;
+                let markerClass = 'marker';
+                
+                if (i === 0) {
+                    markerClass += ' degree-0';
+                } else if (i % 10 === 0) {
+                    markerClass += ' degree-10';
+                } else if (i % 5 === 0) {
+                    markerClass += ' degree-5';
+                }
+                
+                marker.className = markerClass;
+                marker.style.left = `${position}%`;
                 markersContainer.appendChild(marker);
                 
                 // Create marker at bottom
                 const markerBottom = document.createElement('div');
-                markerBottom.className = `marker bottom ${i === 0 ? 'degree-0' : (i % 5 === 0 ? 'degree-5' : '')}`;
-                markerBottom.style.left = `${50 + i * 5}%`;
+                markerBottom.className = markerClass + ' bottom';
+                markerBottom.style.left = `${position}%`;
                 markersContainer.appendChild(markerBottom);
                 
-                // Add label for 5-degree and 10-degree intervals with improved positioning
-                if (i % 5 === 0 && i !== 0) {
+                // Add label for degrees above the marker
+                // Only add labels for specified intervals to avoid cluttering
+                if (i === 0 || Math.abs(i) % 5 === 0) {
                     const label = document.createElement('div');
-                    
-                    // Position labels for better readability - to right of center on left side, to left of center on right side
-                    if (i < 0) {
-                        label.className = 'marker-label right';
-                        label.style.left = `${50 + i * 5}%`;
-                    } else {
-                        label.className = 'marker-label left';
-                        label.style.right = `${50 - i * 5}%`;
-                    }
-                    
+                    label.className = 'marker-label';
                     label.textContent = `${Math.abs(i)}°`;
+                    label.style.left = `${position}%`;
                     markersContainer.appendChild(label);
                 }
             }
@@ -675,7 +772,9 @@
             tiltValue.textContent = `Tilt: ${tilt.toFixed(1)}°`;
             
             // Update bubble position (constrained to not go off screen)
-            const bubblePosition = Math.min(Math.max(50 + tilt * 5, 5), 95);
+            // Calculate position with the same scaling factor used in generateMarkers
+            const spacing = 0.55; // Degrees per percent of width
+            const bubblePosition = Math.min(Math.max(50 + tilt / spacing, 5), 95);
             bubble.style.left = `calc(${bubblePosition}% - 1.5rem)`;
             
             // Update bubble color
