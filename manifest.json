@@ -3,7 +3,7 @@
   "short_name": "Level Tool",
   "description": "A digital level tool for carpenters and DIY enthusiasts",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#f3f4f6",
   "theme_color": "#3b82f6",
   "orientation": "landscape",
