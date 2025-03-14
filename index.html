@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Level Tool">
+    <meta name="orientation" content="landscape">
     
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
@@ -31,71 +32,122 @@
             padding: 0;
             box-sizing: border-box;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            touch-action: manipulation;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #f3f4f6;
         }
         
         body {
-            background-color: #f3f4f6;
-            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+        
+        /* Force landscape */
+        @media screen and (orientation: portrait) {
+            html {
+                transform: rotate(-90deg);
+                transform-origin: left top;
+                width: 100vh;
+                height: 100vw;
+                position: absolute;
+                top: 100%;
+                left: 0;
+            }
+        }
+        
+        .app-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             padding: 1rem;
-            overflow: hidden;
+        }
+        
+        header {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.5rem;
         }
         
         h1 {
             font-size: 1.25rem;
             font-weight: bold;
-            margin-bottom: 1rem;
-            text-align: center;
         }
         
-        .message-container {
-            margin-bottom: 1rem;
-            text-align: center;
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 0.5rem;
         }
         
         .level-status {
             font-weight: bold;
-            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
         }
         
         .level-true {
+            background-color: #dcfce7;
             color: #16a34a;
         }
         
         .level-false {
+            background-color: #fee2e2;
             color: #dc2626;
         }
         
         .tilt-value {
             font-size: 0.875rem;
-            margin-top: 0.25rem;
+            background-color: #f3f4f6;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
         }
         
+        main {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        
+        /* Primary level bar - horizontal across the long edge */
         .level-indicator {
             position: relative;
             width: 100%;
-            max-width: 28rem;
-            height: 3rem;
+            height: 4rem;
             border: 2px solid #d1d5db;
             background-color: white;
-            border-radius: 0.25rem;
-            margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
         }
         
         .bubble {
             position: absolute;
-            top: 0.25rem;
-            height: 2.5rem;
-            width: 2.5rem;
+            top: 0.5rem;
+            height: 3rem;
+            width: 3rem;
             border-radius: 50%;
             background-color: #3b82f6;
             transition: left 0.1s ease-out;
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 10;
         }
         
         .bubble.level {
@@ -103,8 +155,8 @@
         }
         
         .bubble-center {
-            height: 0.5rem;
-            width: 0.5rem;
+            height: 0.75rem;
+            width: 0.75rem;
             background-color: white;
             border-radius: 50%;
         }
@@ -116,51 +168,172 @@
             height: 100%;
             width: 2px;
             background-color: #ef4444;
+            z-index: 5;
         }
         
-        .horizontal-line {
+        /* Measurement markers */
+        .markers {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-top: 2px solid #2563eb;
-            position: relative;
+            height: 100%;
         }
         
-        .line-end-left, .line-end-right {
+        .marker {
+            position: absolute;
+            width: 1px;
+            height: 1rem;
+            background-color: #9ca3af;
+            top: 0;
+            transform: translateX(-50%);
+        }
+        
+        .marker.bottom {
+            top: auto;
+            bottom: 0;
+        }
+        
+        .marker.degree-5 {
+            height: 1.5rem;
+        }
+        
+        .marker.degree-0 {
+            height: 2rem;
+            background-color: #000000;
+        }
+        
+        .marker-label {
+            position: absolute;
+            font-size: 0.6rem;
+            color: #4b5563;
+            top: 1.75rem;
+            transform: translateX(-50%);
+        }
+        
+        /* Visual reference line */
+        .tilt-visualization {
+            position: relative;
+            width: 100%;
+            height: 8rem;
+            border: 2px solid #d1d5db;
+            background-color: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        .level-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #22c55e;
+            transform: translateY(-50%);
+        }
+        
+        .tilt-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #ef4444;
+            transform-origin: center;
+            transform: translateY(-50%) rotate(0deg);
+            transition: transform 0.1s ease-out;
+        }
+        
+        .tilt-line::before, .tilt-line::after {
+            content: '';
             position: absolute;
             width: 0.5rem;
-            height: 1rem;
-            background-color: #2563eb;
+            height: 0.5rem;
+            background-color: #ef4444;
+            border-radius: 50%;
+            top: -0.25rem;
         }
         
-        .line-end-left {
+        .tilt-line::before {
             left: 0;
-            top: -1rem;
         }
         
-        .line-end-right {
+        .tilt-line::after {
             right: 0;
-            top: -1rem;
+        }
+        
+        .angle-guide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .angle-marker {
+            position: absolute;
+            width: 1px;
+            height: 0.5rem;
+            background-color: #9ca3af;
+            top: 50%;
+            transform: translateY(-100%);
+        }
+        
+        .angle-marker.bottom {
+            top: 50%;
+            transform: translateY(0);
+        }
+        
+        .angle-marker.degree-5 {
+            background-color: #6b7280;
+            height: 0.75rem;
+        }
+        
+        .angle-marker.degree-0 {
+            background-color: #000000;
+            height: 1rem;
+        }
+        
+        .angle-label {
+            position: absolute;
+            font-size: 0.6rem;
+            color: #4b5563;
+            top: 38%;
+            transform: translateX(-50%);
+        }
+        
+        .angle-label.bottom {
+            top: 58%;
+        }
+        
+        footer {
+            width: 100%;
+            padding: 0.5rem;
         }
         
         .instructions {
-            margin-top: 2rem;
             text-align: center;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
+            color: #4b5563;
+            padding: 0.5rem;
+        }
+        
+        .permission-screen, .error-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 1rem;
-            max-width: 28rem;
-        }
-        
-        .instructions ul {
-            list-style-type: disc;
-            text-align: left;
-            padding-left: 2rem;
-            margin-top: 0.5rem;
-        }
-        
-        .instructions li {
-            margin-bottom: 0.25rem;
+            z-index: 1000;
         }
         
         .permission-button {
+            margin-top: 1rem;
             padding: 0.5rem 1rem;
             background-color: #3b82f6;
             color: white;
@@ -170,8 +343,10 @@
             cursor: pointer;
         }
         
-        .permission-button:hover {
-            background-color: #2563eb;
+        .error-message {
+            color: #dc2626;
+            margin-bottom: 1rem;
+            font-weight: bold;
         }
         
         #install-container {
@@ -204,53 +379,67 @@
     </style>
 </head>
 <body>
-    <h1>Carpenter's Digital Level Tool</h1>
-    
-    <div id="permission-screen" class="message-container" style="display: none;">
-        <p>This app needs permission to access your device's orientation sensors.</p>
-        <button id="request-permission" class="permission-button" style="margin-top: 1rem;">
+    <div id="permission-screen" class="permission-screen">
+        <h1>Carpenter's Digital Level Tool</h1>
+        <p style="margin-top: 1rem; text-align: center;">This app needs permission to access your device's orientation sensors.</p>
+        <button id="request-permission" class="permission-button">
             Enable Level Tool
         </button>
     </div>
     
-    <div id="error-screen" class="message-container" style="display: none;">
-        <p style="color: #dc2626; margin-bottom: 1rem;" id="error-message"></p>
-        <p id="error-details"></p>
+    <div id="error-screen" class="error-screen" style="display: none;">
+        <h1>Carpenter's Digital Level Tool</h1>
+        <p class="error-message" id="error-message"></p>
+        <p id="error-details" style="text-align: center;"></p>
     </div>
     
-    <div id="level-screen" style="display: none; width: 100%; text-align: center;">
-        <div class="message-container">
-            <p>Place your phone on the surface to check if it's level.</p>
-            <p class="level-status" id="level-status"></p>
-            <p class="tilt-value" id="tilt-value"></p>
-        </div>
+    <div id="level-screen" class="app-container" style="display: none;">
+        <header>
+            <h1>Carpenter's Level Tool</h1>
+            <div class="status-bar">
+                <span class="level-status" id="level-status">NOT LEVEL</span>
+                <span class="tilt-value" id="tilt-value">Tilt: 0.0°</span>
+            </div>
+        </header>
         
-        <!-- Level indicator -->
-        <div class="level-indicator">
-            <!-- Bubble -->
-            <div id="bubble" class="bubble">
-                <div class="bubble-center"></div>
+        <main>
+            <!-- Primary level bar - horizontal across long edge -->
+            <div class="level-indicator">
+                <!-- Markers for reference -->
+                <div class="markers">
+                    <!-- Generate markers dynamically with JavaScript -->
+                </div>
+                
+                <!-- Bubble -->
+                <div id="bubble" class="bubble">
+                    <div class="bubble-center"></div>
+                </div>
+                
+                <!-- Center mark -->
+                <div class="center-mark"></div>
             </div>
             
-            <!-- Center mark -->
-            <div class="center-mark"></div>
-        </div>
+            <!-- Visual reference line -->
+            <div class="tilt-visualization">
+                <!-- Level line (green) -->
+                <div class="level-line"></div>
+                
+                <!-- Angle guides -->
+                <div class="angle-guide">
+                    <!-- Generate angle markers dynamically with JavaScript -->
+                </div>
+                
+                <!-- Tilt line (red) -->
+                <div id="tilt-line" class="tilt-line"></div>
+            </div>
+        </main>
         
-        <!-- Horizontal reference line -->
-        <div class="horizontal-line">
-            <div class="line-end-left"></div>
-            <div class="line-end-right"></div>
-        </div>
-        
-        <!-- Instructions -->
-        <div class="instructions">
-            <p>For best results:</p>
-            <ul>
-                <li>Place your phone flat against the surface</li>
-                <li>Use in <span id="orientation-mode">portrait</span> mode</li>
-                <li>Ensure your phone case doesn't have an uneven back</li>
-            </ul>
-        </div>
+        <footer>
+            <p class="instructions">
+                Place your phone edge on the surface to check if it's level.<br>
+                For best results, ensure your device is flat and the case doesn't have an uneven edge.
+            </p>
+        </footer>
     </div>
     
     <!-- Install prompt -->
@@ -263,7 +452,7 @@
         // App state
         let beta = 0;          // tilt front-to-back (in degrees)
         let gamma = 0;         // tilt left-to-right (in degrees)
-        let orientation = 'portrait';
+        let orientation = 'landscape';
         let permissionState = 'checking';
         let deferredPrompt = null;
 
@@ -277,12 +466,23 @@
         const levelStatus = document.getElementById('level-status');
         const tiltValue = document.getElementById('tilt-value');
         const bubble = document.getElementById('bubble');
-        const orientationMode = document.getElementById('orientation-mode');
+        const tiltLine = document.getElementById('tilt-line');
         const installContainer = document.getElementById('install-container');
         const installButton = document.getElementById('install-button');
+        const markers = document.querySelector('.markers');
+        const angleGuide = document.querySelector('.angle-guide');
 
         // Initialize the app
         function init() {
+            // Try to force landscape orientation
+            forceLandscape();
+            
+            // Generate markers for the level indicator
+            generateMarkers();
+            
+            // Generate angle markers for the tilt visualization
+            generateAngleMarkers();
+            
             // Check if DeviceOrientation is available
             if (window.DeviceOrientationEvent) {
                 // Request permission for iOS 13+ devices
@@ -299,10 +499,6 @@
                 showError('Your device doesn\'t support orientation detection.', 
                           'This tool requires a device with accelerometer and gyroscope sensors.');
             }
-
-            // Check orientation
-            checkOrientation();
-            window.addEventListener('resize', checkOrientation);
             
             // Set up permission button
             requestPermissionButton.addEventListener('click', requestOrientationPermission);
@@ -344,11 +540,94 @@
                 window.navigator.standalone === true) {
                 installContainer.classList.remove('show');
             }
+            
+            // Listen for orientation changes
+            window.addEventListener('orientationchange', forceLandscape);
+            window.addEventListener('resize', forceLandscape);
+        }
+        
+        // Force landscape orientation
+        function forceLandscape() {
+            // Try to lock orientation if supported
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(e => {
+                    console.log('Unable to lock orientation: ', e);
+                });
+            }
+        }
+        
+        // Generate markers for the level indicator
+        function generateMarkers() {
+            // Clear existing markers
+            markers.innerHTML = '';
+            
+            // Create markers at 1-degree intervals
+            for (let i = -10; i <= 10; i++) {
+                // Create marker at top
+                const marker = document.createElement('div');
+                marker.className = `marker ${i === 0 ? 'degree-0' : (i % 5 === 0 ? 'degree-5' : '')}`;
+                marker.style.left = `${50 + i * 5}%`;
+                markers.appendChild(marker);
+                
+                // Create marker at bottom
+                const markerBottom = document.createElement('div');
+                markerBottom.className = `marker bottom ${i === 0 ? 'degree-0' : (i % 5 === 0 ? 'degree-5' : '')}`;
+                markerBottom.style.left = `${50 + i * 5}%`;
+                markers.appendChild(markerBottom);
+                
+                // Add label for 5-degree intervals
+                if (i % 5 === 0 && i !== 0) {
+                    const label = document.createElement('div');
+                    label.className = 'marker-label';
+                    label.textContent = `${Math.abs(i)}°`;
+                    label.style.left = `${50 + i * 5}%`;
+                    markers.appendChild(label);
+                }
+            }
+        }
+        
+        // Generate angle markers for the tilt visualization
+        function generateAngleMarkers() {
+            // Clear existing markers
+            angleGuide.innerHTML = '';
+            
+            // Create markers at 1-degree intervals
+            for (let i = -15; i <= 15; i++) {
+                // Skip 0 as it's the center line
+                if (i === 0) continue;
+                
+                // Create marker at top
+                const marker = document.createElement('div');
+                marker.className = `angle-marker ${i % 5 === 0 ? 'degree-5' : ''}`;
+                marker.style.left = `${50 + i * 3}%`;
+                angleGuide.appendChild(marker);
+                
+                // Create marker at bottom
+                const markerBottom = document.createElement('div');
+                markerBottom.className = `angle-marker bottom ${i % 5 === 0 ? 'degree-5' : ''}`;
+                markerBottom.style.left = `${50 + i * 3}%`;
+                angleGuide.appendChild(markerBottom);
+                
+                // Add label for 5-degree intervals
+                if (i % 5 === 0) {
+                    const label = document.createElement('div');
+                    label.className = 'angle-label';
+                    label.textContent = `${Math.abs(i)}°`;
+                    label.style.left = `${50 + i * 3}%`;
+                    angleGuide.appendChild(label);
+                    
+                    const labelBottom = document.createElement('div');
+                    labelBottom.className = 'angle-label bottom';
+                    labelBottom.textContent = `${Math.abs(i)}°`;
+                    labelBottom.style.left = `${50 + i * 3}%`;
+                    angleGuide.appendChild(labelBottom);
+                }
+            }
         }
 
         // Show permission request screen
         function showPermissionScreen() {
-            permissionScreen.style.display = 'block';
+            permissionScreen.style.display = 'flex';
             errorScreen.style.display = 'none';
             levelScreen.style.display = 'none';
         }
@@ -356,7 +635,7 @@
         // Show error screen
         function showError(message, details) {
             permissionScreen.style.display = 'none';
-            errorScreen.style.display = 'block';
+            errorScreen.style.display = 'flex';
             levelScreen.style.display = 'none';
             
             errorMessage.textContent = message;
@@ -367,7 +646,7 @@
         function showLevelTool() {
             permissionScreen.style.display = 'none';
             errorScreen.style.display = 'none';
-            levelScreen.style.display = 'block';
+            levelScreen.style.display = 'flex';
         }
 
         // Request orientation permission for iOS
@@ -403,20 +682,32 @@
             updateLevel();
         }
 
-        // Check device orientation
-        function checkOrientation() {
-            orientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-            orientationMode.textContent = orientation;
-            updateLevel();
-        }
-
         // Get current tilt based on device orientation
         function getTilt() {
-            if (orientation === 'landscape') {
-                return gamma;
-            } else {
-                return beta;
+            // For landscape mode, we'll use gamma (left-right tilt)
+            // Depending on how the phone is held, we might need to use beta
+            
+            // Use gamma for tilt detection
+            // Note: We need to check the actual device orientation here
+            // and might need to adjust based on the orientation
+            let tilt = gamma;
+            
+            // Adjust based on device orientation
+            if (window.orientation === 90) {
+                // Device is rotated to the right
+                tilt = gamma;
+            } else if (window.orientation === -90) {
+                // Device is rotated to the left
+                tilt = -gamma;
+            } else if (window.orientation === 180) {
+                // Device is upside down
+                tilt = -beta;
+            } else if (window.orientation === 0) {
+                // Device is in normal portrait
+                tilt = beta;
             }
+            
+            return tilt;
         }
 
         // Update level display
@@ -432,8 +723,8 @@
             tiltValue.textContent = `Tilt: ${tilt.toFixed(1)}°`;
             
             // Update bubble position (constrained to not go off screen)
-            const bubblePosition = Math.min(Math.max(50 + tilt * 10, 5), 95);
-            bubble.style.left = `calc(${bubblePosition}% - 1.25rem)`;
+            const bubblePosition = Math.min(Math.max(50 + tilt * 5, 5), 95);
+            bubble.style.left = `calc(${bubblePosition}% - 1.5rem)`;
             
             // Update bubble color
             if (isLevel) {
@@ -441,6 +732,11 @@
             } else {
                 bubble.classList.remove('level');
             }
+            
+            // Update tilt line rotation
+            // Limit the display to +/- 15 degrees for better visualization
+            const clampedTilt = Math.max(Math.min(tilt, 15), -15);
+            tiltLine.style.transform = `translateY(-50%) rotate(${clampedTilt}deg)`;
         }
         
         // Install the app
