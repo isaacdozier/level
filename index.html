@@ -2,883 +2,155 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Carpenter's Level Tool</title>
-    
-    <!-- PWA meta tags -->
-    <meta name="description" content="A digital level tool for carpenters and DIY enthusiasts">
-    <meta name="theme-color" content="#3b82f6">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Level Tool">
-    
-    <!-- PWA manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- iOS icons -->
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koinos Blockchain Hello World</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            touch-action: manipulation;
-        }
-        
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-            background-color: #f3f4f6;
-            position: fixed; /* Prevent scrolling */
-        }
-        
         body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
         }
-        
-        /* Force landscape */
-        @media screen and (orientation: portrait) {
-            html {
-                transform: rotate(-90deg);
-                transform-origin: left top;
-                width: 100vh;
-                height: 100vw;
-                position: absolute;
-                top: 100%;
-                left: 0;
-            }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
         }
-        
-        .app-container {
-            width: 100%;
-            height: 100%;
-            max-width: 1200px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem;
-        }
-        
-        header {
-            width: 100%;
-            text-align: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        h1 {
-            font-size: 1.25rem;
-            font-weight: bold;
-        }
-        
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 0.5rem;
-        }
-        
-        .level-status {
-            font-weight: bold;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-        }
-        
-        .level-true {
-            background-color: #dcfce7;
-            color: #16a34a;
-        }
-        
-        .level-false {
-            background-color: #fee2e2;
-            color: #dc2626;
-        }
-        
-        .tilt-value {
-            font-size: 0.875rem;
-            background-color: #f3f4f6;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-weight: bold;
-        }
-        
-        main {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-        }
-        
-        /* Primary level bar - horizontal across the long edge */
-        .level-indicator {
-            position: relative;
-            width: 100%;
-            height: 5rem;
-            border: 2px solid #d1d5db;
-            background-color: white;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            overflow: hidden;
-        }
-        
-        .bubble {
-            position: absolute;
-            top: 1.5rem;
-            height: 3rem;
-            width: 3rem;
-            border-radius: 50%;
-            background-color: #3b82f6;
-            transition: left 0.1s ease-out;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-        
-        .bubble.level {
-            background-color: #22c55e;
-        }
-        
-        .bubble-center {
-            height: 0.75rem;
-            width: 0.75rem;
-            background-color: white;
-            border-radius: 50%;
-        }
-        
-        .center-mark {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            height: 100%;
-            width: 2px;
-            background-color: #ef4444;
-            z-index: 5;
-        }
-        
-        /* Measurement markers */
-        .markers {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .marker {
-            position: absolute;
-            width: 1px;
-            height: 1rem;
-            background-color: #9ca3af;
-            top: 2.5rem;
-            transform: translateX(-50%);
-        }
-        
-        .marker.bottom {
-            top: auto;
-            bottom: 0;
-        }
-        
-        .marker.degree-5 {
-            height: 1.5rem;
-            background-color: #6b7280;
-        }
-        
-        .marker.degree-10 {
-            height: 1.8rem;
-            background-color: #4b5563;
-        }
-        
-        .marker.degree-0 {
-            height: 2rem;
-            background-color: #000000;
-        }
-        
-        .marker-label {
-            position: absolute;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: #1f2937;
-            top: 0.75rem;
-            text-align: center;
-            transform: translateX(-50%);
-        }
-        
-        /* Visual reference line */
-        .tilt-visualization {
-            position: relative;
-            width: 100%;
-            height: 8rem;
-            border: 2px solid #d1d5db;
-            background-color: white;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            margin-bottom: 1rem;
-        }
-        
-        .level-line {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: #22c55e;
-            transform: translateY(-50%);
-        }
-        
-        .tilt-line {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background-color: #ef4444;
-            transform-origin: center;
-            transform: translateY(-50%) rotate(0deg);
-            transition: transform 0.1s ease-out;
-        }
-        
-        .tilt-line::before, .tilt-line::after {
-            content: '';
-            position: absolute;
-            width: 0.5rem;
-            height: 0.5rem;
-            background-color: #ef4444;
-            border-radius: 50%;
-            top: -0.25rem;
-        }
-        
-        .tilt-line::before {
-            left: 0;
-        }
-        
-        .tilt-line::after {
-            right: 0;
-        }
-        
-        footer {
-            width: 100%;
-            padding: 0.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .instructions {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #4b5563;
-            padding: 0.5rem;
-        }
-        
-        .permission-screen, .error-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #f3f4f6;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            z-index: 1000;
-        }
-        
-        .permission-button {
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            background-color: #3b82f6;
+        button {
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 0.25rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        #install-container {
-            position: fixed;
-            bottom: 1rem;
-            left: 0;
-            right: 0;
-            padding: 0.75rem;
-            background-color: white;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            padding: 10px 15px;
             text-align: center;
-            transition: transform 0.3s ease-out;
-            transform: translateY(100%);
-            z-index: 100;
-        }
-        
-        #install-container.show {
-            transform: translateY(0);
-        }
-        
-        #install-button {
-            padding: 0.5rem 1rem;
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 0.25rem;
-            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
             cursor: pointer;
+            border-radius: 4px;
         }
-        
-        /* Button container and button styles */
-        .button-container {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
+        #result {
+            margin-top: 20px;
+            white-space: pre-wrap;
         }
-        
-        .button {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 0.25rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .reset-button {
-            background-color: #6b7280;
-            color: white;
-        }
-        
-        .reset-button:hover {
-            background-color: #4b5563;
-        }
-        
-        .fullscreen-button {
-            background-color: #3b82f6;
-            color: white;
-        }
-        
-        .fullscreen-button:hover {
-            background-color: #2563eb;
-        }
-        
-        .fullscreen-button.active {
-            background-color: #16a34a;
+        .loading {
+            display: none;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div id="permission-screen" class="permission-screen">
-        <h1>Carpenter's Digital Level Tool</h1>
-        <p style="margin-top: 1rem; text-align: center;">This app needs permission to access your device's orientation sensors.</p>
-        <button id="request-permission" class="permission-button">
-            Enable Level Tool
-        </button>
-    </div>
+    <h1>Koinos Blockchain Hello World</h1>
     
-    <div id="error-screen" class="error-screen" style="display: none;">
-        <h1>Carpenter's Digital Level Tool</h1>
-        <p class="error-message" id="error-message"></p>
-        <p id="error-details" style="text-align: center;"></p>
-    </div>
-    
-    <div id="level-screen" class="app-container" style="display: none;">
-        <header>
-            <h1>Carpenter's Digital Level Tool</h1>
-            <div class="status-bar">
-                <span class="level-status" id="level-status">NOT LEVEL</span>
-                <span class="tilt-value" id="tilt-value">Tilt: 0.0°</span>
-            </div>
-        </header>
-        
-        <main>
-            <!-- Primary level bar - horizontal across long edge -->
-            <div class="level-indicator">
-                <!-- Markers for reference -->
-                <div class="markers" id="markers">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-                
-                <!-- Bubble -->
-                <div id="bubble" class="bubble">
-                    <div class="bubble-center"></div>
-                </div>
-                
-                <!-- Center mark -->
-                <div class="center-mark"></div>
-            </div>
-            
-            <!-- Visual reference line -->
-            <div class="tilt-visualization">
-                <!-- Level line (green) -->
-                <div class="level-line"></div>
-                
-                <!-- Tilt line (red) -->
-                <div id="tilt-line" class="tilt-line"></div>
-            </div>
-        </main>
-        
-        <footer>
-            <p class="instructions">
-                Place your phone edge on the surface to check if it's level.<br>
-                For best results, ensure your device is flat and the case doesn't have an uneven edge.
-            </p>
-            
-            <!-- Button container with both buttons -->
-            <div class="button-container">
-                <!-- Fullscreen button -->
-                <button id="fullscreen-button" class="button fullscreen-button">
-                    <span id="fullscreen-text">Fullscreen</span>
-                </button>
-                
-                <!-- Reset button -->
-                <button id="reset-button" class="button reset-button">
-                    Reset Sensors
-                </button>
-            </div>
-        </footer>
-    </div>
-    
-    <!-- Install prompt -->
-    <div id="install-container">
-        <p>Install this app on your device!</p>
-        <button id="install-button">Add to Home Screen</button>
+    <div class="container">
+        <p>This simple app demonstrates connecting to the Koinos blockchain and retrieving basic information.</p>
+        <button id="getInfo">Get Blockchain Info</button>
+        <div id="loading" class="loading">Loading...</div>
+        <div id="result"></div>
     </div>
 
     <script>
-        // App state
-        let beta = 0;          // tilt front-to-back (in degrees)
-        let gamma = 0;         // tilt left-to-right (in degrees)
-        let permissionState = 'checking';
-        let deferredPrompt = null;
-        let isInFullscreen = false;
-
-        // DOM elements
-        const permissionScreen = document.getElementById('permission-screen');
-        const errorScreen = document.getElementById('error-screen');
-        const levelScreen = document.getElementById('level-screen');
-        const requestPermissionButton = document.getElementById('request-permission');
-        const errorMessage = document.getElementById('error-message');
-        const errorDetails = document.getElementById('error-details');
-        const levelStatus = document.getElementById('level-status');
-        const tiltValue = document.getElementById('tilt-value');
-        const bubble = document.getElementById('bubble');
-        const tiltLine = document.getElementById('tilt-line');
-        const installContainer = document.getElementById('install-container');
-        const installButton = document.getElementById('install-button');
-        const markersContainer = document.getElementById('markers');
-        const resetButton = document.getElementById('reset-button');
-        const fullscreenButton = document.getElementById('fullscreen-button');
-        const fullscreenText = document.getElementById('fullscreen-text');
-
-        // Initialize the app
-        function init() {
-            // Try to hide browser UI after a short delay
-            setTimeout(attemptHideBrowserUI, 1000);
+        document.addEventListener('DOMContentLoaded', function() {
+            const getInfoButton = document.getElementById('getInfo');
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
             
-            // Generate markers for the level indicator
-            generateMarkers();
+            // Koinos RPC endpoints
+            const endpoints = [
+                'https://mainnet.koinosblocks.com/jsonrpc' // KoinosBlocks Mainnet API
+            ];
+            // Default to the first endpoint
+            let currentEndpointIndex = 0;
             
-            // Check if DeviceOrientation is available
-            if (window.DeviceOrientationEvent) {
-                // Request permission for iOS 13+ devices
-                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    permissionState = 'needs-permission';
-                    showPermissionScreen();
-                } else {
-                    // Non-iOS devices or older iOS versions
-                    permissionState = 'granted';
-                    startLevelTool();
+            getInfoButton.addEventListener('click', async function() {
+                resultDiv.textContent = '';
+                loadingDiv.style.display = 'block';
+                
+                try {
+                    // Get head block info using the get_head_info RPC method
+                    const headInfoResponse = await fetchKoinosRPC('chain.get_head_info', {});
+                    
+                    // Get chain info
+                    const chainInfoResponse = await fetchKoinosRPC('chain.get_chain_id', {});
+                    
+                    // Format and display the results
+                    const formattedResult = `
+KOINOS BLOCKCHAIN INFORMATION:
+-----------------------------
+Head Block:
+- Block Height: ${headInfoResponse.head_topology.height}
+- Block Time: ${new Date(headInfoResponse.head_topology.timestamp * 1000).toLocaleString()}
+- Block ID: ${headInfoResponse.head_topology.id}
+
+Chain Information:
+- Chain ID: ${chainInfoResponse.chain_id}
+
+Connection Information:
+- Using endpoint: ${endpoints[currentEndpointIndex]}
+                    `;
+                    
+                    resultDiv.textContent = formattedResult;
+                } catch (error) {
+                    resultDiv.textContent = `Error: ${error.message}`;
+                    console.error('Error fetching blockchain info:', error);
+                } finally {
+                    loadingDiv.style.display = 'none';
                 }
-            } else {
-                permissionState = 'not-supported';
-                showError('Your device doesn\'t support orientation detection.', 
-                          'This tool requires a device with accelerometer and gyroscope sensors.');
-            }
+            });
             
-            // Set up permission button
-            requestPermissionButton.addEventListener('click', requestOrientationPermission);
-            
-            // Set up install button
-            installButton.addEventListener('click', installApp);
-            
-            // Set up reset button
-            resetButton.addEventListener('click', resetSensors);
-            
-            // Set up fullscreen button
-            fullscreenButton.addEventListener('click', toggleFullscreen);
-            
-            // Register service worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('service-worker.js')
-                        .then(registration => {
-                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                        })
-                        .catch(error => {
-                            console.log('ServiceWorker registration failed: ', error);
+            // Helper function to make RPC calls to Koinos with endpoint fallback
+            async function fetchKoinosRPC(method, params) {
+                // Try each endpoint until one works
+                let lastError;
+                
+                for (let i = 0; i < endpoints.length; i++) {
+                    try {
+                        const endpointIndex = (currentEndpointIndex + i) % endpoints.length;
+                        const endpoint = endpoints[endpointIndex];
+                        
+                        console.log(`Trying endpoint: ${endpoint}`);
+                        
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                id: 1,
+                                jsonrpc: '2.0',
+                                method: method,
+                                params: params
+                            })
                         });
-                });
-            }
-            
-            // Handle install prompt
-            window.addEventListener('beforeinstallprompt', (e) => {
-                // Prevent Chrome 67 and earlier from automatically showing the prompt
-                e.preventDefault();
-                // Stash the event so it can be triggered later
-                deferredPrompt = e;
-                // Show the install button
-                installContainer.classList.add('show');
-            });
-            
-            // Hide install prompt if app is already installed
-            window.addEventListener('appinstalled', () => {
-                installContainer.classList.remove('show');
-                deferredPrompt = null;
-            });
-            
-            // Hide install prompt if app is loaded as standalone
-            if (window.matchMedia('(display-mode: standalone)').matches || 
-                window.navigator.standalone === true) {
-                installContainer.classList.remove('show');
-            }
-            
-            // Try to force landscape orientation
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(e => {
-                    console.log('Unable to lock orientation: ', e);
-                });
-            }
-            
-            // Setup event listeners for orientation changes
-            window.addEventListener('orientationchange', () => {
-                // Try to hide browser UI again after orientation change
-                setTimeout(attemptHideBrowserUI, 500);
-                setTimeout(updateLevel, 100);
-            });
-            
-            // Check for fullscreen changes
-            document.addEventListener('fullscreenchange', updateFullscreenButtonState);
-            document.addEventListener('webkitfullscreenchange', updateFullscreenButtonState);
-            document.addEventListener('mozfullscreenchange', updateFullscreenButtonState);
-            document.addEventListener('MSFullscreenChange', updateFullscreenButtonState);
-            
-            // Initial update to fullscreen button state
-            updateFullscreenButtonState();
-        }
-        
-        // Toggle fullscreen mode
-        function toggleFullscreen() {
-            if (!isInFullscreen) {
-                enterFullscreen();
-            } else {
-                exitFullscreen();
-            }
-        }
-        
-        // Enter fullscreen mode
-        function enterFullscreen() {
-            const elem = document.documentElement;
-            
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.mozRequestFullScreen) { // Firefox
-                elem.mozRequestFullScreen();
-            } else if (elem.webkitRequestFullscreen) { // Chrome, Safari and Opera
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { // IE/Edge
-                elem.msRequestFullscreen();
-            } else {
-                // Fallback to scroll technique
-                window.scrollTo(0, 1);
-            }
-        }
-        
-        // Exit fullscreen mode
-        function exitFullscreen() {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.mozCancelFullScreen) { // Firefox
-                document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) { // IE/Edge
-                document.msExitFullscreen();
-            }
-        }
-        
-        // Update fullscreen button state
-        function updateFullscreenButtonState() {
-            // Check if we're in fullscreen mode
-            isInFullscreen = (document.fullscreenElement || 
-                           document.webkitFullscreenElement || 
-                           document.mozFullScreenElement || 
-                           document.msFullscreenElement);
-            
-            // Also check if we're in standalone PWA mode
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                window.navigator.standalone === true;
-            
-            if (isInFullscreen || isStandalone) {
-                fullscreenButton.classList.add('active');
-                fullscreenText.textContent = "Exit Fullscreen";
-            } else {
-                fullscreenButton.classList.remove('active');
-                fullscreenText.textContent = "Fullscreen";
-            }
-        }
-        
-        // Attempt to hide browser UI
-        function attemptHideBrowserUI() {
-            // Check if we're in standalone mode (already fullscreen)
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                window.navigator.standalone === true;
-            
-            if (!isStandalone && !isInFullscreen) {
-                // Method 1: Scroll technique (works on some mobile browsers)
-                window.scrollTo(0, 1);
-            }
-        }
-        
-        // Generate markers for the level indicator
-        function generateMarkers() {
-            // Clear existing markers
-            markersContainer.innerHTML = '';
-            
-            // Calculate the scaling factor for the 90-degree range
-            // We want the markers to be dense enough in the middle but still show up to 90 degrees
-            const spacing = 0.55; // Degrees per percent of width
-            
-            // Create markers for specific degrees
-            const degreesToShow = [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60, 75, 90];
-            
-            // Add markers for both positive and negative angles
-            for (let i = -90; i <= 90; i++) {
-                // Only show major markers to avoid overcrowding
-                if (!degreesToShow.includes(Math.abs(i))) continue;
-                
-                // Calculate position (50% is center)
-                const position = 50 + i / spacing;
-                
-                // Skip if outside the visible area
-                if (position < 0 || position > 100) continue;
-                
-                // Create marker at the appropriate position
-                const marker = document.createElement('div');
-                let markerClass = 'marker';
-                
-                if (i === 0) {
-                    markerClass += ' degree-0';
-                } else if (i % 10 === 0) {
-                    markerClass += ' degree-10';
-                } else if (i % 5 === 0) {
-                    markerClass += ' degree-5';
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (data.error) {
+                            throw new Error(`RPC error: ${data.error.message}`);
+                        }
+                        
+                        // If we get here, the endpoint worked - use it as default next time
+                        currentEndpointIndex = endpointIndex;
+                        console.log(`Successfully used endpoint: ${endpoint}`);
+                        
+                        return data.result;
+                    } catch (error) {
+                        console.warn(`Endpoint failed: ${error.message}`);
+                        lastError = error;
+                        // Continue to the next endpoint
+                    }
                 }
                 
-                marker.className = markerClass;
-                marker.style.left = `${position}%`;
-                markersContainer.appendChild(marker);
-                
-                // Create marker at bottom
-                const markerBottom = document.createElement('div');
-                markerBottom.className = markerClass + ' bottom';
-                markerBottom.style.left = `${position}%`;
-                markersContainer.appendChild(markerBottom);
-                
-                // Add label for degrees above the marker
-                // Only add labels for specified intervals to avoid cluttering
-                if (i === 0 || Math.abs(i) % 5 === 0) {
-                    const label = document.createElement('div');
-                    label.className = 'marker-label';
-                    label.textContent = `${Math.abs(i)}°`;
-                    label.style.left = `${position}%`;
-                    markersContainer.appendChild(label);
-                }
+                // If we get here, all endpoints failed
+                throw new Error(`All Koinos endpoints failed. Last error: ${lastError.message}`);
             }
-        }
-
-        // Show permission request screen
-        function showPermissionScreen() {
-            permissionScreen.style.display = 'flex';
-            errorScreen.style.display = 'none';
-            levelScreen.style.display = 'none';
-        }
-
-        // Show error screen
-        function showError(message, details) {
-            permissionScreen.style.display = 'none';
-            errorScreen.style.display = 'flex';
-            levelScreen.style.display = 'none';
-            
-            errorMessage.textContent = message;
-            errorDetails.textContent = details;
-        }
-
-        // Show level tool
-        function showLevelTool() {
-            permissionScreen.style.display = 'none';
-            errorScreen.style.display = 'none';
-            levelScreen.style.display = 'flex';
-        }
-
-        // Request orientation permission for iOS
-        async function requestOrientationPermission() {
-            try {
-                const result = await DeviceOrientationEvent.requestPermission();
-                if (result === 'granted') {
-                    permissionState = 'granted';
-                    startLevelTool();
-                } else {
-                    permissionState = 'denied';
-                    showError('Permission to access orientation sensors was denied.',
-                              'Please allow access to device orientation in your browser settings and reload the page.');
-                }
-            } catch (error) {
-                permissionState = 'error';
-                showError('An error occurred while requesting sensor permissions.',
-                          'Please make sure you\'re using a secure connection (HTTPS) and try again.');
-            }
-        }
-
-        // Start the level tool
-        function startLevelTool() {
-            window.addEventListener('deviceorientation', handleOrientation);
-            showLevelTool();
-            updateLevel();
-        }
-
-        // Handle orientation data
-        function handleOrientation(event) {
-            beta = event.beta;   // Front-to-back tilt
-            gamma = event.gamma;  // Left-to-right tilt
-            updateLevel();
-        }
-
-        // Get current tilt based on device orientation
-        function getTilt() {
-            // For landscape mode, we'll use gamma (left-right tilt)
-            // Depending on how the phone is held, we might need to use beta
-            
-            // Use gamma for tilt detection
-            // Note: We need to check the actual device orientation here
-            // and might need to adjust based on the orientation
-            let tilt = gamma;
-            
-            // Adjust based on device orientation
-            if (window.orientation === 90) {
-                // Device is rotated to the right
-                tilt = gamma;
-            } else if (window.orientation === -90) {
-                // Device is rotated to the left
-                tilt = -gamma;
-            } else if (window.orientation === 180) {
-                // Device is upside down
-                tilt = -beta;
-            } else if (window.orientation === 0) {
-                // Device is in normal portrait
-                tilt = beta;
-            }
-            
-            return tilt;
-        }
-
-        // Update level display
-        function updateLevel() {
-            const tilt = getTilt();
-            const isLevel = Math.abs(tilt) < 0.5; // Consider level if within 0.5 degrees
-            
-            // Update status
-            levelStatus.textContent = isLevel ? 'LEVEL ✓' : 'NOT LEVEL';
-            levelStatus.className = isLevel ? 'level-status level-true' : 'level-status level-false';
-            
-            // Update tilt value
-            tiltValue.textContent = `Tilt: ${tilt.toFixed(1)}°`;
-            
-            // Update bubble position (constrained to not go off screen)
-            // Calculate position with the same scaling factor used in generateMarkers
-            const spacing = 0.55; // Degrees per percent of width
-            const bubblePosition = Math.min(Math.max(50 + tilt / spacing, 5), 95);
-            bubble.style.left = `calc(${bubblePosition}% - 1.5rem)`;
-            
-            // Update bubble color
-            if (isLevel) {
-                bubble.classList.add('level');
-            } else {
-                bubble.classList.remove('level');
-            }
-            
-            // Update tilt line rotation
-            // Limit the display to +/- 15 degrees for better visualization
-            const clampedTilt = Math.max(Math.min(tilt, 15), -15);
-            tiltLine.style.transform = `translateY(-50%) rotate(${clampedTilt}deg)`;
-        }
-        
-        // Reset sensors function
-        function resetSensors() {
-            // Reset the sensor values
-            beta = 0;
-            gamma = 0;
-            
-            // Vibrate if available
-            if (navigator.vibrate) {
-                navigator.vibrate(100);
-            }
-            
-            // Show a brief confirmation message by changing the button text temporarily
-            const originalText = resetButton.textContent;
-            resetButton.textContent = "Sensors Reset";
-            resetButton.disabled = true;
-            
-            setTimeout(() => {
-                resetButton.textContent = originalText;
-                resetButton.disabled = false;
-                
-                // Re-initialize sensors by removing and readding event listener
-                window.removeEventListener('deviceorientation', handleOrientation);
-                setTimeout(() => {
-                    window.addEventListener('deviceorientation', handleOrientation);
-                    updateLevel();
-                }, 100);
-            }, 1000);
-            
-            // Update the display
-            updateLevel();
-        }
-        
-        // Install the app
-        async function installApp() {
-            if (!deferredPrompt) {
-                // The prompt isn't available
-                // Provide instructions for manual installation
-                alert(
-                    'To install this app manually:\n\n' +
-                    '- On iOS: tap the Share button, then "Add to Home Screen"\n' +
-                    '- On Android: tap the menu button, then "Install app"'
-                );
-                return;
-            }
-            
-            // Show the install prompt
-            deferredPrompt.prompt();
-            
-            // Wait for the user to respond to the prompt
-            const { outcome } = await deferredPrompt.userChoice;
-            
-            // We've used the prompt, and can't use it again
-            deferredPrompt = null;
-            
-            // Hide the install container
-            installContainer.classList.remove('show');
-        }
-
-        // Initialize the app
-        init();
+        });
     </script>
 </body>
 </html>
